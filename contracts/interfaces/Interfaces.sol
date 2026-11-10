@@ -59,8 +59,7 @@ interface IPancakePair {
 }
 
 /// @notice SPACE ID Agent ID registry (ERC721, "SPACE ID Agent ID", symbol AI).
-/// Verified on-chain 2026-11-10: balanceOf(0xD140...) == 1,
-/// ownerOf(keccak256("andymulya")) == 0xD1402b47621ee4e3106442BF36fFafF85c9E6A44.
+/// Verified on-chain 2026-11-10: the registry is live and the gate below works.
 /// The gate uses balanceOf() > 0 (owns any Agent ID).
 interface IAgentID {
     function balanceOf(address owner) external view returns (uint256);
