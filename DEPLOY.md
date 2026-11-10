@@ -18,6 +18,22 @@
 Artifacts (ABI + bytecode): `artifacts/<Contract>.json`. Compile: `node compile.js`.
 Local deploy test: `bash deploy-local.sh` (needs anvil running).
 
+## Remix manual deploy — NO re-coding, just copy-paste
+
+1. Buka remix.ethereum.org. Di File Explorer buat 4 file ini (isi copy-paste dari repo,
+   path sama): `contracts/VeinCore.sol`, `contracts/VeinToken.sol`,
+   `contracts/interfaces/Interfaces.sol`, `contracts/RemixDeploy.sol`.
+2. Solidity Compiler: pilih **0.8.28**, centang **optimizer ON, 200 runs**, lalu Compile.
+   Import `@openzeppelin/...` di-resolve otomatis oleh Remix. `RemixDeploy.sol` hanya
+   supaya `ProxyAdmin` + `TransparentUpgradeableProxy` muncul di panel Deploy —
+   file itu sendiri JANGAN di-deploy.
+3. Deploy & Run Transactions: Environment = **WalletConnect** (Binance app) atau
+   **Injected Provider** (MetaMask), connect wallet BARU `0x72eb...9210`, network
+   **BSC mainnet (chain 56)**. Pastikan gas price ≤ 0.14 gwei sebelum tiap tx.
+4. Deploy berurutan sesuai tabel di bawah. Untuk langkah 5: di panel Deploy pilih
+   contract **VeinCore**, paste alamat proxy di **At Address**, lalu panggil
+   `initialize(token, opsWallet)`.
+
 ## Deployment order (BSC mainnet, chain 56, deployer = NEW wallet 0x72ebd7a99e416e737559206a7ee96c549b1c9210)
 
 | Step | Contract | Constructor args | Gas (measured on anvil) |
