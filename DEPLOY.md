@@ -1,7 +1,10 @@
 # Agent Vein ($VEIN) — Deployment Guide
 
-> DO NOT deploy yet. This is the build + compile + gas-estimate package. Deployment needs
-> Andy's explicit "Ya" + enough BNB (see gas section). No transaction has been broadcast.
+> MANUAL DEPLOY by Andy (2026-11-10 ~23:12 WIB): deployer + opsWallet = NEW wallet
+> `0x72ebd7a99e416e737559206a7ee96c549b1c9210` (NOT the main wallet — baw cannot use it,
+> the agentic wallet is always the main wallet). Deploy via Remix (remix.ethereum.org),
+> connect the new wallet via WalletConnect (Binance app) or MetaMask. No transaction
+> has been broadcast yet.
 
 ## Contracts (compiled, solc 0.8.28, optimizer 200 runs)
 
@@ -15,15 +18,15 @@
 Artifacts (ABI + bytecode): `artifacts/<Contract>.json`. Compile: `node compile.js`.
 Local deploy test: `bash deploy-local.sh` (needs anvil running).
 
-## Deployment order (BSC mainnet, chain 56, deployer = Andy's wallet)
+## Deployment order (BSC mainnet, chain 56, deployer = NEW wallet 0x72ebd7a99e416e737559206a7ee96c549b1c9210)
 
 | Step | Contract | Constructor args | Gas (measured on anvil) |
 |---|---|---|---|
 | 1 | VeinCore implementation | — (none) | 3,588,229 |
-| 2 | ProxyAdmin | owner = `0xD1402b47621ee4e3106442BF36fFafF85c9E6A44` | 301,043 |
+| 2 | ProxyAdmin | owner = `0x72ebd7a99e416e737559206a7ee96c549b1c9210` | 301,043 |
 | 3 | TransparentUpgradeableProxy | implementation = step 1, admin = step 2, data = `0x` | 643,754 |
-| 4 | VeinToken | core = step 3 (proxy), opsWallet = `0xD1402b47621ee4e3106442BF36fFafF85c9E6A44` | 946,936 |
-| 5 | `initialize` on the proxy | token = step 4, opsWallet = `0xD1402b47621ee4e3106442BF36fFafF85c9E6A44` | 274,881 |
+| 4 | VeinToken | core = step 3 (proxy), opsWallet = `0x72ebd7a99e416e737559206a7ee96c549b1c9210` | 946,936 |
+| 5 | `initialize` on the proxy | token = step 4, opsWallet = `0x72ebd7a99e416e737559206a7ee96c549b1c9210` | 274,881 |
 | **Total** | | | **5,754,843 gas** |
 
 Notes:
@@ -44,10 +47,11 @@ Notes:
 | 0.30 gwei | 0.001726 BNB |
 | 1.00 gwei | 0.005755 BNB |
 
-- BNB now: **0.0000768** — NOT enough (needs 0.000288 at current gas price).
-- After pending HONGBAO swap: ~0.000139 — still NOT enough.
-- **Minimum for deploy: ~0.00029 BNB at 0.05 gwei.** Recommended top-up target: **0.001 BNB**
-  (covers gas spikes + leaves gas for the post-deploy steps + BAGENT claim 07:00 + AGC auto-claim 04:11).
+- BNB in the NEW deployer wallet: **0.00041** (verified 2026-11-10 ~23:08 WIB) — enough for
+  the 0.000288 deploy gas at 0.05 gwei, with ~0.00012 spare. Do NOT deploy if gas price
+  spikes above ~0.14 gwei (cost would exceed the balance). Main wallet BNB 0.000652 is
+  NOT used for this deploy.
+- **Minimum for deploy: ~0.00029 BNB at 0.05 gwei.**
 - Deploy txs are sequential (each step needs the previous address). Keep ~0.0001 BNB spare
   after deploy for the first user-facing txs.
 
