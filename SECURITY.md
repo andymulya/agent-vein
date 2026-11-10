@@ -27,7 +27,7 @@
   own exact-amount approval, only inside `refundSale()`).
 
 ## The honest risk: the proxy upgrade key
-- The proxy admin is a ProxyAdmin owned by Andy's wallet (`0xD1402b47621ee4e3106442BF36fFafF85c9E6A44`).
+- The proxy admin is a ProxyAdmin owned by the NEW project wallet (`0x72ebd7a99e416e737559206a7ee96c549b1c9210`).
   Whoever controls that key can upgrade VeinCore to ANY logic — including a version that
   drains deposits. There is NO timelock and NO multi-sig, because Andy explicitly declined
   both ("gapapa pakai proxy biar nanti saya bisa ubah logik").
