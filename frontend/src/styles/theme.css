@@ -1,0 +1,214 @@
+/* Agent Vein pixel theme — plain CSS for the effects Tailwind utilities
+   don't express well: scanlines, vignette, pixel buttons, hard shadows. */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #060309;
+  color: #f4efff;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: #ff2e4d;
+  color: #fff;
+}
+
+button {
+  font-family: "Silkscreen", monospace;
+  cursor: pointer;
+}
+
+button,
+[role="button"],
+select,
+summary,
+input:not([type="checkbox"], [type="radio"]) {
+  min-height: 2.75rem;
+}
+
+a {
+  color: #ffc44d;
+}
+
+/* ---------- scanlines + vignette ---------- */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 2px,
+    rgba(0, 0, 0, 0.14) 2px 4px
+  );
+  mix-blend-mode: multiply;
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 59;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 38%,
+    transparent 55%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
+}
+
+/* ---------- pixel buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  padding: 0.8rem 1.4rem;
+  border: 3px solid #000;
+  color: #22100a;
+  background: linear-gradient(180deg, #ffd97a, #ffc44d 55%, #ff9d2e);
+  box-shadow:
+    inset -5px -5px 0 rgba(120, 40, 0, 0.28),
+    inset 5px 5px 0 rgba(255, 255, 255, 0.35),
+    6px 6px 0 #000;
+  image-rendering: pixelated;
+}
+
+.btn:active {
+  transform: translate(4px, 4px);
+  box-shadow:
+    inset -5px -5px 0 rgba(120, 40, 0, 0.28),
+    inset 5px 5px 0 rgba(255, 255, 255, 0.35),
+    2px 2px 0 #000;
+}
+
+.btn.ghost {
+  background: #1d1233;
+  color: #f4efff;
+  box-shadow:
+    inset -5px -5px 0 rgba(0, 0, 0, 0.35),
+    inset 5px 5px 0 rgba(255, 255, 255, 0.06),
+    6px 6px 0 #000;
+}
+
+.btn.ghost:active {
+  transform: translate(4px, 4px);
+  box-shadow:
+    inset -5px -5px 0 rgba(0, 0, 0, 0.35),
+    inset 5px 5px 0 rgba(255, 255, 255, 0.06),
+    2px 2px 0 #000;
+}
+
+.btn.mint {
+  background: linear-gradient(180deg, #a7ffd9, #5df0b0 55%, #2ed18c);
+  color: #06231a;
+}
+
+.btn.small {
+  padding: 0.55rem 0.9rem;
+  font-size: 0.82rem;
+}
+
+.btn[disabled] {
+  filter: grayscale(0.6) brightness(0.75);
+  cursor: not-allowed;
+}
+
+/* ---------- logo drop ---------- */
+.logo-drop {
+  width: 18px;
+  height: 24px;
+  flex: none;
+  background: #ff2e4d;
+  clip-path: polygon(
+    50% 0,
+    100% 45%,
+    100% 72%,
+    82% 95%,
+    50% 100%,
+    18% 95%,
+    0 72%,
+    0 45%
+  );
+  box-shadow: inset -4px -5px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- blinking dot ---------- */
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.blink {
+  animation: blink 1.6s steps(2) infinite;
+}
+
+.blink-fast {
+  animation: blink 1.2s steps(2) infinite;
+}
+
+/* ---------- title gradient ---------- */
+.title-gradient {
+  background: linear-gradient(
+    180deg,
+    #fff6cf 5%,
+    #ffc44d 38%,
+    #ff7847 68%,
+    #ff2e4d 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(4px 4px 0 #2b0a33) drop-shadow(8px 8px 0 rgba(0, 0, 0, 0.85));
+}
+
+/* ---------- toast ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.2rem;
+  transform: translate(-50%, 200%);
+  z-index: 80;
+  background: #1d1233;
+  color: #f4efff;
+  border: 3px solid #000;
+  box-shadow:
+    6px 6px 0 rgba(0, 0, 0, 0.6),
+    inset 0 0 0 2px #553a8c;
+  font-family: "Silkscreen", monospace;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.85rem 1.2rem;
+  max-width: min(92vw, 520px);
+  text-align: center;
+  transition: transform 0.18s steps(4);
+}
+
+.toast.show {
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .blink,
+  .blink-fast {
+    animation: none;
+  }
+}

@@ -1,0 +1,27 @@
+@import "tailwindcss";
+@import "./styles/theme.css";
+
+@theme {
+  --color-bg0: #060309;
+  --color-bg: #0b0614;
+  --color-panel: #150c26;
+  --color-panel2: #1d1233;
+  --color-panel3: #120a20;
+  --color-line: #3a2563;
+  --color-line2: #553a8c;
+  --color-ink: #f4efff;
+  --color-mut: #b3a8d9;
+  --color-dim: #7e73a8;
+  --color-blood: #ff2e4d;
+  --color-blood-dk: #a30f2c;
+  --color-ember: #ff7847;
+  --color-gold: #ffc44d;
+  --color-gold2: #ff9d2e;
+  --color-mint: #5df0b0;
+  --color-violet: #8b6cff;
+
+  --font-disp: "Press Start 2P", monospace;
+  --font-ui: "Silkscreen", monospace;
+  --font-num: "VT323", monospace;
+  --font-body: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
