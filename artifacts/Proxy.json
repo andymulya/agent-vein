@@ -1,0 +1,14 @@
+{
+  "contractName": "Proxy",
+  "sourceName": "@openzeppelin/contracts/proxy/Proxy.sol",
+  "abi": [
+    {
+      "stateMutability": "payable",
+      "type": "fallback"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "bytecodeBytes": 0,
+  "deployedBytes": 0
+}
