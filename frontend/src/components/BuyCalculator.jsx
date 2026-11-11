@@ -28,7 +28,10 @@ export default function BuyCalculator() {
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
 
-  const n = Math.max(0, parseInt(shares, 10) || 0);
+  const n = Math.min(
+    MAX_MINT_SHARES,
+    Math.max(0, parseInt(shares, 10) || 0),
+  );
   // Exact BNB cost, ceiling division so the contract returns exactly
   // n × 5,000 VEIN (floor division both ways would short by 1 VEIN).
   const costWei =

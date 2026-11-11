@@ -1,5 +1,6 @@
 import { ToastProvider } from "./contexts/ToastContext";
 import PageLayout from "./layouts/PageLayout";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Hero from "./components/Hero";
 import BuyPage from "./pages/BuyPage";
 import PoolsPage from "./pages/PoolsPage";
@@ -17,12 +18,24 @@ export default function App() {
   return (
     <ToastProvider>
       <PageLayout>
-        <Hero />
-        <BuyPage />
-        <PoolsPage />
-        <ClaimPage />
-        <TokenomicsPage />
-        <RulesPage />
+        <ErrorBoundary>
+          <Hero />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <BuyPage />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <PoolsPage />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <ClaimPage />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <TokenomicsPage />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <RulesPage />
+        </ErrorBoundary>
       </PageLayout>
     </ToastProvider>
   );
