@@ -11,6 +11,8 @@ import {
   SALE_ALLOCATION,
   SALE_MAX_TARGET_USD,
   LIQUIDITY_ALLOCATION,
+  VEIN_PER_SHARE,
+  TOTAL_MINT_SHARES,
   FREE_SHARES,
   FREE_MINT_AMOUNT,
 } from "../constants/vein";
@@ -82,14 +84,15 @@ export default function BuyPage() {
             head={<Chip tone="red">{sale.status}</Chip>}
           >
             <div className="font-num text-[2rem] leading-none max-[640px]:text-[1.55rem]">
-              {fmt(sale.sold)}
+              {fmt(sale.sold / VEIN_PER_SHARE)}
               <span className="text-[1.5rem] text-gold max-[640px]:text-[1.25rem]">
                 {" "}
-                / {fmt(SALE_ALLOCATION)} VEIN
+                / {fmt(TOTAL_MINT_SHARES)} SHARES
               </span>
             </div>
             <div className="mt-2 font-num text-[1.35rem] leading-none text-gold max-[640px]:text-[1.15rem]">
-              {fmt(sale.allocation - sale.sold)} VEIN REMAINING
+              {fmt((sale.allocation - sale.sold) / VEIN_PER_SHARE)} SHARES
+              REMAINING
             </div>
             <div className="mt-3">
               <SegmentedBar total={40} filled={filled} tones={["f1", "f2", "f3", "f4"]} />
@@ -154,8 +157,8 @@ export default function BuyPage() {
                 {freePhase.live
                   ? freePhase.status === "ENDED"
                     ? "Free phase is over — minting continues at $0.0001."
-                    : `First 1,000 Agent wallets mint ${fmt(FREE_MINT_AMOUNT)} VEIN free. When the counter hits 1,000, the free phase ends.`
-                  : `First 1,000 Agent wallets mint ${fmt(FREE_MINT_AMOUNT)} VEIN free — starts with the v2 upgrade. When the counter hits 1,000, the free phase ends.`}
+                    : `First 1,000 Agent wallets mint 1 free share (${fmt(FREE_MINT_AMOUNT)} VEIN). When the counter hits 1,000, the free phase ends.`
+                  : `First 1,000 Agent wallets mint 1 free share (${fmt(FREE_MINT_AMOUNT)} VEIN) — starts with the v2 upgrade. When the counter hits 1,000, the free phase ends.`}
               </p>
             </div>
             <p className="mt-2 text-[0.9rem] text-mut">

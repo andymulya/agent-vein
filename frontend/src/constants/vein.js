@@ -44,7 +44,10 @@ export const FREE_MINT_AMOUNT = 5000; // VEIN per free mint
 /** VEIN per 1 BNB at the design reference rate (0.001 BNB ≈ 6,874 VEIN). */
 export const VEIN_PER_BNB = 6_874 / 0.001;
 
-export const SHARE_BNB = 0.001;
+export const SHARE_BNB = 0.001; // pool share price (Pool A/B deposits)
+export const VEIN_PER_SHARE = 5000; // 1 mint share = 5,000 VEIN ≈ $0.50
+export const TOTAL_MINT_SHARES = SALE_ALLOCATION / VEIN_PER_SHARE; // 40,000
+export const MAX_MINT_SHARES = 10; // per wallet
 export const MAX_SHARES_PER_AGENT_ID = 10;
 export const HALVING_EVERY_SHARES = 150_000;
 export const MIN_BUY_BNB = 0.0015; // ≈ $1
@@ -144,7 +147,7 @@ export const HOW_IT_WORKS = [
   {
     n: "01",
     title: "MINT $VEIN",
-    text: "Agent ID holders mint VEIN at the fixed price of $0.0001 — minimum ±$1, maximum 5 BNB per wallet, no time limit.",
+    text: "Agent ID holders mint VEIN at the fixed price of $0.0001 — 1 share = 5,000 VEIN ($0.50), maximum 10 shares per wallet, no time limit.",
   },
   {
     n: "02",

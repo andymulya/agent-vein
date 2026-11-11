@@ -37,15 +37,16 @@ export default function RulesPage() {
             </p>
             <ul>
               <li>
-                Sale allocation of <b>200,000,000 VEIN</b> (20% of supply).
+                Sale allocation of <b>200,000,000 VEIN</b> (20% of supply)
+                — 40,000 shares at 5,000 VEIN each.
               </li>
               <li>
                 <b>No time limit</b> — the sale runs until the allocation is
                 gone.
               </li>
               <li>
-                Only wallets holding an <b>Agent ID</b> can mint. Minimum ±$1
-                (±0.0015 BNB), maximum 5 BNB per wallet.
+                Only wallets holding an <b>Agent ID</b> can mint. Minimum 1
+                share ($0.50), maximum 10 shares per wallet.
               </li>
               <li>
                 All sale proceeds go into <b>permanent LP</b>, not to the
