@@ -8,7 +8,7 @@ import {
   isAgentHolder,
   buyVein,
 } from "../services/preview";
-import { fmt, fmtBnb } from "../utils/format";
+import { fmt } from "../utils/format";
 
 /** 1 mint share = 5,000 VEIN (≈ $0.50) at 6,874,000 VEIN/BNB. */
 const VEIN_PER_BNB = 6874000n;
@@ -33,6 +33,7 @@ export default function BuyCalculator() {
   const costWei =
     (BigInt(n) * BigInt(VEIN_PER_SHARE) * 10n ** 18n + VEIN_PER_BNB - 1n) /
     VEIN_PER_BNB;
+  const costBnb = Number(costWei) / 1e18;
   const receive = fmt(n * VEIN_PER_SHARE);
 
   const onMint = async () => {
@@ -116,7 +117,7 @@ export default function BuyCalculator() {
             TOTAL COST
           </div>
           <div className="font-num text-[1.35rem] text-white">
-            {fmtBnb(costWei).toFixed(6)} BNB
+            {costBnb.toFixed(6)} BNB
           </div>
         </div>
       </div>
