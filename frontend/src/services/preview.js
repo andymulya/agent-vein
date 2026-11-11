@@ -15,6 +15,8 @@ import {
   getEpochInfo,
   getClaimable as chainClaimable,
   getReferralStats as chainReferralStats,
+  getMintState as chainMintState,
+  getPoolBWithdrawable as chainPoolBWithdrawable,
   formatVein,
   formatBnb,
 } from "./chain";
@@ -23,9 +25,12 @@ export {
   connectWallet,
   getConnectedAccount,
   isAgentHolder,
-  buyVein,
+  mintShares,
   depositPool,
   claimAll,
+  withdrawPoolB,
+  captureReferrerFromUrl,
+  getStoredReferrer,
   addVeinToWallet,
   shortAddress,
   parseBnb,
@@ -36,17 +41,20 @@ export async function getSaleStatus() {
     const s = await getSaleState();
     const sold = formatVein(s.soldWei);
     const pct = (sold / SALE_ALLOCATION) * 100;
+    // Pools can open at 20% while the sale is still live — the status
+    // must say so instead of hiding the sale behind "POOLS OPEN" (M11).
+    const status = !s.saleOpen
+      ? "CLOSED"
+      : pct >= 100
+        ? "SOLD OUT"
+        : s.poolsOpen
+          ? "LIVE · POOLS OPEN"
+          : "LIVE";
     return {
       sold,
       allocation: SALE_ALLOCATION,
       pct,
-      status: s.poolsOpen
-        ? "POOLS OPEN"
-        : s.saleOpen
-          ? pct >= 100
-            ? "SOLD OUT"
-            : "LIVE"
-          : "CLOSED",
+      status,
       poolsOpen: s.poolsOpen,
       proceedsBnb: formatBnb(s.proceedsWei),
     };
@@ -99,17 +107,44 @@ export async function getPoolStats() {
 }
 
 export async function getClaimable(address) {
-  if (!address) return { vein: 0, bnbReturned: 0, unlockedPct: 0, claims: [] };
+  if (!address)
+    return { vein: 0, bnbReturned: 0, unlockedPct: 0, claims: [], withdrawable: [], error: false };
   try {
-    const c = await chainClaimable(address);
+    const [c, w] = await Promise.all([
+      chainClaimable(address),
+      chainPoolBWithdrawable(address),
+    ]);
     return {
       vein: formatVein(c.veinWei),
       bnbReturned: formatBnb(c.bnbWei),
       unlockedPct: c.unlockedPct,
       claims: c.claims,
+      // Matured Pool B positions ready for LP withdrawal (H3).
+      withdrawable: w.map((p) => ({
+        id: p.id,
+        shares: p.shares,
+        lpTokens: formatVein(p.lpTokensWei),
+        reward: formatVein(p.rewardWei),
+        matured: p.matured,
+        unlocksAt: p.unlocksAt,
+      })),
+      error: false,
     };
   } catch {
-    return { vein: 0, bnbReturned: 0, unlockedPct: 0, claims: [] };
+    // M6: never show a wrong zero when the reads fail — flag the error.
+    return { vein: 0, bnbReturned: 0, unlockedPct: 0, claims: [], withdrawable: [], error: true };
+  }
+}
+
+/** v2 mint state for the connected wallet. Fails soft on v1 (reads revert). */
+export async function getMintState(address) {
+  if (!address)
+    return { freeMinted: false, mintedShares: 0, poolSharesMinted: 0, freeClaimed: 0, freeAvailable: false, remainingMint: 10, remainingPool: 10, live: false };
+  try {
+    const s = await chainMintState(address);
+    return { ...s, live: true };
+  } catch {
+    return { freeMinted: false, mintedShares: 0, poolSharesMinted: 0, freeClaimed: 0, freeAvailable: false, remainingMint: 10, remainingPool: 10, live: false };
   }
 }
 
@@ -126,8 +161,12 @@ export async function getReferralStats(address) {
 export async function getEpoch() {
   try {
     const e = await getEpochInfo();
-    return { epoch: e.epoch, poolAReward: formatVein(e.rewardAWei) };
+    return {
+      epoch: e.epoch,
+      poolAReward: formatVein(e.rewardAWei),
+      poolBReward: formatVein(e.rewardBWei),
+    };
   } catch {
-    return { epoch: 1, poolAReward: 750 };
+    return { epoch: 1, poolAReward: 750, poolBReward: 2500 };
   }
 }

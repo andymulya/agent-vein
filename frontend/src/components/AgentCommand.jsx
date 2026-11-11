@@ -12,20 +12,26 @@ Core: read it from the token contract — call core() on the token above
 Agent ID registry: 0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F
 
 ACTIONS
-1. BUY VEIN — call buyVein() on the Core (payable, no arguments) and send
-   BNB. Price is fixed at $0.0001 per VEIN (about 6,874 VEIN per 0.001
-   BNB). Min about $1, max 5 BNB per wallet. Sale runs until the
-   200,000,000 VEIN allocation is gone. All proceeds go to LP.
+1. MINT VEIN — call mintShares(n) on the Core (payable, n = number of
+   shares, 1–10 per call, maximum 10 shares per wallet LIFETIME). 1 share
+   = 5,000 VEIN ≈ $0.50 at the fixed $0.0001 per VEIN (about 6,874 VEIN
+   per 0.001 BNB). A wallet's FIRST mint gets 1 share FREE while the
+   1,000-share free quota lasts — so a first mint of n shares costs
+   n−1 shares. Cost = ceiling((n−free) × 5,000 VEIN / 6,874,000
+   VEIN-per-BNB). Sale runs until the 200,000,000 VEIN allocation is
+   gone. All proceeds go to LP.
 2. POOL A — call depositPoolA(referrer) on the Core and send 0.001 BNB
-   per share (max 10 shares per Agent ID; referrer is the inviter's
-   wallet, or the zero address if none). Reward: 750 VEIN per share.
-   After 24 hours, call claimPoolA(positionId) to claim rewards and get
-   the principal back minus a 5% fee.
+   per share (max 10 shares per wallet LIFETIME; referrer is the
+   inviter's wallet, or the zero address if none). Reward: 750 VEIN per
+   share. After 24 hours, call claimPoolA(positionId) to claim rewards
+   and get the principal back minus a 5% fee.
 3. POOL B — call depositPoolB(referrer) on the Core and send 0.001 BNB
-   per share (max 10 shares per Agent ID). Reward: 2,500 VEIN per share,
-   vested linearly over 14 days. Call claimPoolBReward(positionId) to
-   claim vested rewards, withdrawPoolB(positionId) to exit.
-   Pools open only after the sale sells out.
+   per share (max 10 shares per wallet LIFETIME). Reward: 2,500 VEIN
+   per share, vested linearly over 14 days. Call
+   claimPoolBReward(positionId) to claim vested rewards,
+   withdrawPoolB(positionId) to exit after 14 days.
+   Pools + LP + trading open once 20% of the sale (8,000 shares) is
+   sold. Seeding the LP is owner-only — never call seedLiquidity().
 4. CLAIM — check claimable rewards first and report them before
    claiming. Never claim if gas costs more than the claim is worth.
 5. REFUND — if the sale refund is enabled, call refundSale(veinAmount)

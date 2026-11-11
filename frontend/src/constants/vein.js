@@ -50,8 +50,6 @@ export const TOTAL_MINT_SHARES = SALE_ALLOCATION / VEIN_PER_SHARE; // 40,000
 export const MAX_MINT_SHARES = 10; // per wallet
 export const MAX_SHARES_PER_AGENT_ID = 10;
 export const HALVING_EVERY_SHARES = 150_000;
-export const MIN_BUY_BNB = 0.0015; // ≈ $1
-export const MAX_BUY_BNB = 5;
 
 export const NAV_ITEMS = [
   { id: "beli", label: "Mint", icon: "▣" },
@@ -81,8 +79,9 @@ export const POOLS = {
     reward: 2500,
     backKey: "VEIN+BNB",
     backCap: "RETURNED · VESTING",
-    backLabel: "DEPOSIT ROTATED INTO VEIN + LP",
-    back: (deposit) => deposit,
+    // M3: the return is LP underlying (VEIN + BNB) whose value floats with
+    // the pair — never a fixed BNB number. No back() here on purpose.
+    backLabel: "RETURNED AS VEIN + BNB (LP VALUE FLOATS)",
     when: "14-DAY VESTING",
     desc: "Deep pulse. Half of your deposit buys VEIN, half becomes liquidity. Your VEIN + BNB proceeds vest linearly over 14 days — the largest reward per share.",
   },
@@ -129,7 +128,7 @@ export const TOKENOMICS = [
 export const FEE_CARDS = [  {
     value: "2%",
     title: "TRANSFER TAX",
-    text: "Every buy and sell on the pair is taxed 2%: 1% to operations (in BNB) and 1% to LP that is burned. Regular wallet-to-wallet transfers are not taxed.",
+    text: "Every buy and sell on the pair is taxed 2%: 1% to operations (in VEIN) and 1% stays in the contract to be compounded into LP by anyone once it reaches 10,000 VEIN — those LP tokens are burned. Regular wallet-to-wallet transfers are not taxed.",
   },
   {
     value: "5%",
@@ -152,7 +151,7 @@ export const HOW_IT_WORKS = [
   {
     n: "02",
     title: "LP IS FORMED",
-    text: "When all 200M VEIN are sold, all BNB from the sale + the 150M VEIN liquidity allocation become permanent LP on PancakeSwap.",
+    text: "Once 20% of the sale (8,000 shares) is sold, the first LP is seeded — 30M VEIN + all sale proceeds so far — and pools open. More LP is seeded in stages as the sale progresses, until all 150M VEIN + all proceeds are paired permanently on PancakeSwap.",
   },
   {
     n: "03",
@@ -180,12 +179,12 @@ export const PULSE_LOG = [
   {
     tag: "POOL",
     tone: "inf",
-    html: "Pool A &amp; Pool B stay <b>locked</b> until the 200M VEIN sale sells out.",
+    html: "Pool A &amp; Pool B stay <b>locked</b> until 20% of the sale (8,000 shares) is sold.",
   },
   {
     tag: "LP",
     tone: "inf",
-    html: "All sale proceeds + 150M VEIN become permanent LP on PancakeSwap.",
+    html: "Sale proceeds + VEIN are seeded into permanent LP in stages as the sale progresses — first seed at 20% sold.",
   },
   {
     tag: "HALVING",

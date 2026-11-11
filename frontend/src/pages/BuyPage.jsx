@@ -119,8 +119,8 @@ export default function BuyPage() {
             </div>
             <p className="mt-4 text-[0.9rem] text-mut">
               Pool A &amp; Pool B stay locked while the sale runs — the pools
-              start pulsing only after all 200M VEIN are sold and the LP is
-              formed. {fmtBnb(sale.proceedsBnb)} BNB collected so far.
+              start pulsing once 20% of the sale (8,000 shares) is sold and
+              the first LP is seeded. {fmtBnb(sale.proceedsBnb)} BNB collected so far.
             </p>
             <div className="mt-5 border-t-2 border-line pt-4">
               <div className="flex items-center justify-between gap-2">

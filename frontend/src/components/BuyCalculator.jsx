@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PixelButton from "./PixelButton";
 import { useToast } from "../contexts/ToastContext";
 import { VEIN_PER_SHARE, MAX_MINT_SHARES } from "../constants/vein";
@@ -6,7 +6,8 @@ import {
   connectWallet,
   getConnectedAccount,
   isAgentHolder,
-  buyVein,
+  mintShares,
+  getMintState,
   addVeinToWallet,
 } from "../services/preview";
 import { fmt } from "../utils/format";
@@ -26,25 +27,51 @@ const QUICK_SHARES = [
 export default function BuyCalculator() {
   const [shares, setShares] = useState("10");
   const [busy, setBusy] = useState(false);
+  const [mintState, setMintState] = useState({
+    freeMinted: false,
+    mintedShares: 0,
+    freeAvailable: false,
+    remainingMint: MAX_MINT_SHARES,
+    live: false,
+  });
   const { showToast } = useToast();
 
-  const n = Math.min(
-    MAX_MINT_SHARES,
-    Math.max(0, parseInt(shares, 10) || 0),
-  );
+  // Per-wallet v2 state (free-share eligibility + lifetime cap). Fails soft
+  // on the v1 contract — then the free share simply isn't offered.
+  useEffect(() => {
+    let alive = true;
+    getConnectedAccount().then((a) => {
+      if (!a || !alive) return;
+      getMintState(a).then((s) => {
+        if (alive) setMintState(s);
+      });
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const cap = mintState.live ? mintState.remainingMint : MAX_MINT_SHARES;
+  const n = Math.min(cap, Math.max(0, parseInt(shares, 10) || 0));
+  // v2 discount: a wallet's first mint gets 1 share FREE while the 1,000
+  // free-share quota lasts — you pay for n−1 shares, receive n shares.
+  const freeApplied = mintState.freeAvailable && n >= 1;
+  const paidShares = freeApplied ? n - 1 : n;
   // Exact BNB cost, ceiling division so the contract returns exactly
-  // n × 5,000 VEIN (floor division both ways would short by 1 VEIN).
+  // paidShares × 5,000 VEIN (floor division both ways would short by 1 VEIN).
   const costWei =
-    (BigInt(n) * BigInt(VEIN_PER_SHARE) * 10n ** 18n + VEIN_PER_BNB - 1n) /
+    (BigInt(paidShares) * BigInt(VEIN_PER_SHARE) * 10n ** 18n + VEIN_PER_BNB - 1n) /
     VEIN_PER_BNB;
   const costBnb = Number(costWei) / 1e18;
   const receive = fmt(n * VEIN_PER_SHARE);
 
   const onMint = async () => {
     if (busy) return;
-    if (!/^\d+$/.test(shares.trim()) || n < MIN_SHARES || n > MAX_MINT_SHARES) {
+    if (!/^\d+$/.test(shares.trim()) || n < MIN_SHARES || n > cap) {
       showToast(
-        `Shares must be a whole number between <b>${MIN_SHARES}</b> and <b>${MAX_MINT_SHARES}</b> per wallet.`,
+        cap < MAX_MINT_SHARES
+          ? `You have already minted <b>${mintState.mintedShares}</b> of your ${MAX_MINT_SHARES} lifetime shares — at most <b>${cap}</b> more.`
+          : `Shares must be a whole number between <b>${MIN_SHARES}</b> and <b>${MAX_MINT_SHARES}</b> per wallet (lifetime).`,
       );
       return;
     }
@@ -62,9 +89,29 @@ export default function BuyCalculator() {
         );
         return;
       }
-      const hash = await buyVein(costWei);
+      // Re-read the cap + free eligibility right before sending — the
+      // free quota can exhaust between page load and mint. Recompute the
+      // cost from the fresh state so a lost free share never underpays.
+      const fresh = await getMintState(account);
+      let costToSend = costWei;
+      let freeNow = freeApplied;
+      if (fresh.live) {
+        if (n > fresh.remainingMint) {
+          showToast(
+            `Your lifetime cap leaves only <b>${fresh.remainingMint}</b> share(s) — lower the amount and try again.`,
+          );
+          return;
+        }
+        setMintState(fresh);
+        freeNow = fresh.freeAvailable && n >= 1;
+        const paidNow = freeNow ? n - 1 : n;
+        costToSend =
+          (BigInt(paidNow) * BigInt(VEIN_PER_SHARE) * 10n ** 18n + VEIN_PER_BNB - 1n) /
+          VEIN_PER_BNB;
+      }
+      const hash = await mintShares(n, costToSend);
       showToast(
-        `<span style="color:#7dffa8">MINT SENT</span> — tx ${hash.slice(0, 10)}…${hash.slice(-6)}. Confirm it in your wallet, then check BscScan.`,
+        `<span style="color:#7dffa8">MINT SENT</span> — ${n} share(s)${freeNow ? ", 1 FREE" : ""}. Tx ${hash.slice(0, 10)}…${hash.slice(-6)}. Confirm it in your wallet, then check BscScan.`,
       );
     } catch (e) {
       showToast(`Mint failed: ${String(e?.message || e).slice(0, 120)}`);
@@ -96,7 +143,7 @@ export default function BuyCalculator() {
           id="mint-shares"
           type="number"
           min={MIN_SHARES}
-          max={MAX_MINT_SHARES}
+          max={cap}
           step="1"
           value={shares}
           onChange={(e) => setShares(e.target.value)}
@@ -136,6 +183,11 @@ export default function BuyCalculator() {
           <div className="font-num text-[1.35rem] text-white">
             {costBnb.toFixed(6)} BNB
           </div>
+          {freeApplied && (
+            <div className="mt-1 font-ui text-[0.75rem] font-bold text-mint">
+              1 SHARE FREE — YOU PAY FOR {paidShares} OF {n}
+            </div>
+          )}
         </div>
       </div>
 
@@ -151,9 +203,23 @@ export default function BuyCalculator() {
         <span className="mt-1 h-4 w-4 flex-none bg-gold" />
         <span>
           1 share = {fmt(VEIN_PER_SHARE)} VEIN (≈ $0.50) · Minimum 1 share ·
-          maximum {MAX_MINT_SHARES} shares per wallet.
+          maximum {MAX_MINT_SHARES} shares per wallet, lifetime
+          {mintState.live && mintState.mintedShares > 0
+            ? ` — you have minted ${mintState.mintedShares}, ${mintState.remainingMint} left`
+            : ""}
+          .
         </span>
       </div>
+      {mintState.live && mintState.freeAvailable && (
+        <div className="mt-3 flex items-start gap-2.5 text-[0.9rem] text-mut">
+          <span className="mt-1 h-4 w-4 flex-none bg-mint [clip-path:polygon(14%_44%,0_65%,40%_100%,100%_16%,84%_2%,38%_72%)]" />
+          <span>
+            <b className="text-mint">Your first share is FREE</b> — this
+            wallet has not claimed its free share yet, and the free phase
+            still has quota.
+          </span>
+        </div>
+      )}
       <div className="mt-3 flex items-start gap-2.5 text-[0.9rem] text-mut">
         <span className="mt-1 h-4 w-4 flex-none bg-blood [clip-path:polygon(20%_0,0_20%,30%_50%,0_80%,20%_100%,50%_70%,80%_100%,100%_80%,70%_50%,100%_20%,80%_0,50%_30%)]" />
         <span>

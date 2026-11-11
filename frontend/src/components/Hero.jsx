@@ -9,7 +9,7 @@ const HERO_STATS = [
   { value: "1 B", label: "TOTAL SUPPLY VEIN", tone: "" },
   { value: "200 M", label: "SALE ALLOCATION", tone: "text-gold" },
   { value: "750", label: "VEIN / SHARE — POOL A", tone: "text-mint" },
-  { value: "LOCKED", label: "POOLS — OPEN AFTER THE SALE SELLS OUT", tone: "text-blood" },
+  { value: "LOCKED", label: "POOLS — OPEN AT 20% OF SALE", tone: "text-blood" },
 ];
 
 export default function Hero() {

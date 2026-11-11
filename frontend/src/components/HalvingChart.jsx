@@ -1,8 +1,8 @@
 import { fmt } from "../utils/format";
 
-/** Reward halving chart — 8 epochs, base reward halves each epoch. */
+/** Reward halving chart — 10 epochs, base reward halves each epoch. */
 export default function HalvingChart({ pool }) {
-  const epochs = 8;
+  const epochs = 10;
 
   return (
     <div className="mt-6">
@@ -16,13 +16,15 @@ export default function HalvingChart({ pool }) {
       </div>
       <p className="mt-2 text-[0.88rem] text-mut">
         Every share mined in either pool raises the shared share height. The
-        base reward halves every 150,000 shares. A batch crossing a halving
-        boundary is split: the first shares are paid at the old reward, the
-        rest at the new one.
+        base reward halves every 150,000 shares. A deposit uses the reward
+        rate of the epoch it lands in for the whole batch — a batch crossing
+        a halving boundary is <b>not</b> split between rates.
       </p>
       <div className="flex h-[170px] items-end gap-1.5 pt-2 max-[480px]:h-[140px] max-[480px]:gap-1">
         {Array.from({ length: epochs }, (_, e) => {
-          const reward = pool.reward / Math.pow(2, e);
+          // Integer halving, like the contract (base >> epoch) — the tail
+          // epochs are 2, 1, then 0, not fractions.
+          const reward = Math.floor(pool.reward / Math.pow(2, e));
           return (
             <div
               key={e}

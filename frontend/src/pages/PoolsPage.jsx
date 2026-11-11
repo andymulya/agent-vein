@@ -5,7 +5,7 @@ import PoolSimulator from "../components/PoolSimulator";
 import SceneCard from "../components/SceneCard";
 import PulseLog from "../components/PulseLog";
 
-/** Pool mining section: locked until the sale sells out. */
+/** Pool mining section: locked until 20% of the sale is sold. */
 export default function PoolsPage() {
   return (
     <section className="scroll-mt-24 px-4 py-12 pb-2 max-[640px]:px-3 max-[640px]:pt-9" id="pool">
@@ -20,10 +20,11 @@ export default function PoolsPage() {
             ▚ POOLS LOCKED
           </span>
           <p className="m-0 flex-1 text-[0.95rem] text-mut">
-            The pools deliberately open <b className="text-ink">after</b> the
-            sale sells out. Because pool principal can return to participants,
-            permanent liquidity must form from the sale first — so the pair is
-            not shallow and easily drained.
+            The pools deliberately open <b className="text-ink">after</b> 20%
+            of the sale (8,000 shares) is sold and the first LP is seeded.
+            Because pool principal can return to participants, permanent
+            liquidity must form from the sale first — so the pair is not
+            shallow and easily drained.
           </p>
         </div>
 

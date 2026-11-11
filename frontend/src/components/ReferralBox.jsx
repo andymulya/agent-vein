@@ -1,12 +1,25 @@
 import { useEffect, useState } from "react";
 import { useToast } from "../contexts/ToastContext";
-import { getReferralStats } from "../services/preview";
+import {
+  getReferralStats,
+  captureReferrerFromUrl,
+  shortAddress,
+} from "../services/preview";
 import { fmt } from "../utils/format";
 
 /** Referral link box + qualified-referral stats. */
 export default function ReferralBox({ account }) {
   const { showToast } = useToast();
   const [stats, setStats] = useState({ qualified: 0, earned: 0 });
+  const [referrer, setReferrer] = useState(null);
+
+  // H2: a /r/<address> link now actually attaches — the referrer is read
+  // from the URL and kept for this session, so the visitor's pool deposits
+  // pay the inviter. Without this, the link was dead end-to-end.
+  useEffect(() => {
+    const ref = captureReferrerFromUrl();
+    if (ref) setReferrer(ref);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -69,6 +82,13 @@ export default function ReferralBox({ account }) {
           <b className="text-ink">2× in Pool A or Pool B</b>.
         </span>
       </div>
+      {referrer && (
+        <p className="mt-2 text-[0.9rem] text-mut">
+          You arrived via a referral link —{" "}
+          <b className="text-mint">{shortAddress(referrer)}</b> will be
+          recorded as your referrer when you deposit into a pool.
+        </p>
+      )}
       <p className="mt-2 text-[0.9rem] text-mut">
         This real-participation requirement closes the loophole for fake accounts
         that only farm rewards.

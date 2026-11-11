@@ -46,7 +46,7 @@ export default function RulesPage() {
               </li>
               <li>
                 Only wallets holding an <b>Agent ID</b> can mint. Minimum 1
-                share ($0.50), maximum 10 shares per wallet.
+                share ($0.50), maximum 10 shares per wallet, lifetime.
               </li>
               <li>
                 All sale proceeds go into <b>permanent LP</b>, not to the
@@ -131,7 +131,8 @@ export default function RulesPage() {
             <ul>
               <li>
                 <b>2% transfer tax</b> on buys and sells on the pair: 1%
-                operations (BNB) + 1% LP that is burned.
+                operations (VEIN) + 1% compounded into LP once it reaches
+                10,000 VEIN (LP tokens burned).
               </li>
               <li>
                 <b>5% Pool A fee</b> on returned principal ·{" "}

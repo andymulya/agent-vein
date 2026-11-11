@@ -32,7 +32,12 @@ const SEL = {
   referralPaid: "0xb851d7ea",
   balanceOf: "0x70a08231",
   tradingOpen: "0xffb54a99",
-  buyVein: "0xa1a89618",
+  mintShares: "0xb1aa90a1", // v2: replaces buyVein (removed in v2)
+  freeMinted: "0x389fcf06", // v2: freeMinted(address) -> bool
+  mintedShares: "0x7b622c72", // v2: mintedShares(address) -> uint256
+  poolSharesMinted: "0xec8da818", // v2: poolSharesMinted(address) -> uint256
+  lpSeeded: "0x2c2ddc18", // v2: lpSeeded() -> uint256
+  withdrawPoolB: "0x93646c25", // v2: withdrawPoolB(uint256)
   depositPoolA: "0x4e29584f",
   depositPoolB: "0xb71ab3ef",
   claimPoolA: "0xeb8c82fa",
@@ -110,10 +115,12 @@ async function rpcCall(method, params) {
   let lastErr = null;
   for (const url of RPC_URLS) {
     try {
+      // 15 s cap so a hung RPC cannot freeze the page (M7).
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body,
+        signal: AbortSignal.timeout(15000),
       });
       const json = await res.json();
       if (json.error) throw new Error(json.error.message || "RPC error");
@@ -150,7 +157,36 @@ async function getLogs(address, topics, fromBlock) {
     ]);
     out.push(...logs);
   }
-  return out;
+  return { logs: out, latest };
+}
+
+/**
+ * Per-address log cache (M7): event logs are append-only, so repeat scans
+ * only fetch blocks since the last scan instead of re-reading from
+ * DEPLOY_BLOCK every 30 s. In-memory only — a page reload re-scans once.
+ */
+const logCache = new Map(); // address -> { nextBlock, aLogs, bLogs, refLogs }
+
+async function cachedUserLogs(address) {
+  const key = address.toLowerCase();
+  let c = logCache.get(key);
+  if (!c) {
+    c = { nextBlock: DEPLOY_BLOCK, aLogs: [], bLogs: [], refLogs: [] };
+    logCache.set(key, c);
+  }
+  const topicsA = [TOPIC.poolADeposited, null, topicAddr(address)];
+  const topicsB = [TOPIC.poolBDeposited, null, topicAddr(address)];
+  const topicsR = [TOPIC.referralPaid, null, topicAddr(address)];
+  const [rA, rB, rR] = await Promise.all([
+    getLogs(VEIN_CORE, topicsA, c.nextBlock),
+    getLogs(VEIN_CORE, topicsB, c.nextBlock),
+    getLogs(VEIN_CORE, topicsR, c.nextBlock),
+  ]);
+  c.aLogs.push(...rA.logs);
+  c.bLogs.push(...rB.logs);
+  c.refLogs.push(...rR.logs);
+  c.nextBlock = Math.max(rA.latest, rB.latest, rR.latest) + 1;
+  return c;
 }
 
 function topicAddr(addr) {
@@ -314,16 +350,11 @@ async function readPositionB(id) {
 }
 
 async function userPositionIds(address) {
-  const topicsA = [TOPIC.poolADeposited, null, topicAddr(address)];
-  const topicsB = [TOPIC.poolBDeposited, null, topicAddr(address)];
-  const [logsA, logsB] = await Promise.all([
-    getLogs(VEIN_CORE, topicsA, DEPLOY_BLOCK),
-    getLogs(VEIN_CORE, topicsB, DEPLOY_BLOCK),
-  ]);
+  const c = await cachedUserLogs(address);
   // position id is the first indexed topic (uint256, topics[1])
   return {
-    aIds: [...new Set(logsA.map((l) => Number(BigInt(l.topics[1]))))],
-    bIds: [...new Set(logsB.map((l) => Number(BigInt(l.topics[1]))))],
+    aIds: [...new Set(c.aLogs.map((l) => Number(BigInt(l.topics[1]))))],
+    bIds: [...new Set(c.bLogs.map((l) => Number(BigInt(l.topics[1]))))],
   };
 }
 
@@ -373,12 +404,12 @@ export async function getClaimable(address) {
 }
 
 export async function getReferralStats(address) {
-  const [count, paid, logs] = await Promise.all([
+  const [count, paid, c] = await Promise.all([
     ethCall(VEIN_CORE, SEL.stakeCount + encAddress(address)),
     ethCall(VEIN_CORE, SEL.referralPaid + encAddress(address)),
-    getLogs(VEIN_CORE, [TOPIC.referralPaid, null, topicAddr(address)], DEPLOY_BLOCK),
+    cachedUserLogs(address),
   ]);
-  const qualified = new Set(logs.map((l) => l.topics[1].toLowerCase())).size;
+  const qualified = new Set(c.refLogs.map((l) => l.topics[1].toLowerCase())).size;
   return {
     stakeCount: Number(decUint(count)),
     referralPaid: decBool(paid),
@@ -387,19 +418,118 @@ export async function getReferralStats(address) {
   };
 }
 
+/* ---------- v2 mint state ---------- */
+/** Per-wallet mint/pool caps + free-share eligibility (v2 only; throws on v1). */
+export async function getMintState(address) {
+  const [free, minted, pool, claimed] = await Promise.all([
+    ethCall(VEIN_CORE, SEL.freeMinted + encAddress(address)),
+    ethCall(VEIN_CORE, SEL.mintedShares + encAddress(address)),
+    ethCall(VEIN_CORE, SEL.poolSharesMinted + encAddress(address)),
+    ethCall(VEIN_CORE, SEL.freeClaimed),
+  ]);
+  const freeMinted = decBool(free);
+  const mintedShares = Number(decUint(minted));
+  const poolSharesMinted = Number(decUint(pool));
+  const freeClaimed = Number(decUint(claimed));
+  return {
+    freeMinted,
+    mintedShares,
+    poolSharesMinted,
+    freeClaimed,
+    freeAvailable: !freeMinted && freeClaimed < 1000,
+    remainingMint: Math.max(0, 10 - mintedShares),
+    remainingPool: Math.max(0, 10 - poolSharesMinted),
+  };
+}
+
+/** Pool B positions whose 14-day lock has passed and can be withdrawn (LP exit). */
+export async function getPoolBWithdrawable(address) {
+  const now = Math.floor(Date.now() / 1000);
+  const { bIds } = await userPositionIds(address);
+  const positions = await Promise.all(bIds.map(readPositionB));
+  const out = [];
+  for (const p of positions) {
+    if (p.owner.toLowerCase() !== address.toLowerCase() || p.withdrawn)
+      continue;
+    const matured = now >= p.depositTime + VEST_B_S;
+    out.push({
+      id: p.id,
+      shares: p.shares,
+      lpTokensWei: p.lpTokensWei,
+      rewardWei: p.rewardWei,
+      matured,
+      unlocksAt: p.depositTime + VEST_B_S,
+    });
+  }
+  return out;
+}
+
+/* ---------- referral plumbing (H2) ---------- */
+const REFERRER_KEY = "vein_referrer";
+
+function isAddress(v) {
+  return /^0x[0-9a-fA-F]{40}$/.test(v || "");
+}
+
+/**
+ * Capture a referrer from the URL (/r/<address>) and persist it for this
+ * browser session. Called on page load so a shared referral link actually
+ * attaches to the visitor's later deposit.
+ */
+export function captureReferrerFromUrl() {
+  if (typeof window === "undefined") return null;
+  const m = window.location.pathname.match(/^\/r\/(0x[0-9a-fA-F]{40})/);
+  if (!m) return getStoredReferrer();
+  const ref = m[1];
+  if (isAddress(ref)) {
+    try {
+      sessionStorage.setItem(REFERRER_KEY, ref.toLowerCase());
+    } catch {
+      /* storage unavailable — deposit will fall back to zero address */
+    }
+    return ref.toLowerCase();
+  }
+  return getStoredReferrer();
+}
+
+export function getStoredReferrer() {
+  try {
+    const v = sessionStorage.getItem(REFERRER_KEY);
+    return isAddress(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
 /* ---------- writes (user confirms each tx in their wallet) ---------- */
-export async function buyVein(bnbWei) {
-  return sendTx({ to: VEIN_CORE, data: SEL.buyVein, value: toHex(bnbWei) });
+/** v2 share mint: n shares (1–10), cost in wei (0 when the free share covers it). */
+export async function mintShares(n, bnbWei) {
+  return sendTx({
+    to: VEIN_CORE,
+    data: SEL.mintShares + encUint(n),
+    value: toHex(bnbWei),
+  });
 }
 
 export async function depositPool(poolId, shares, referrer) {
+  // Referrer defaults to the one captured from a /r/<address> link (H2);
+  // never the caller's own address (self-referral pays nothing on-chain).
+  const ref = referrer || getStoredReferrer() || ZERO_ADDRESS;
   const data =
     (poolId === "b" ? SEL.depositPoolB : SEL.depositPoolA) +
-    encAddress(referrer || ZERO_ADDRESS);
+    encAddress(ref);
   return sendTx({
     to: VEIN_CORE,
     data,
     value: toHex(BigInt(shares) * SHARE_PRICE_WEI),
+  });
+}
+
+/** Exit a matured Pool B position: returns the LP underlying (VEIN + BNB) + remaining reward. */
+export async function withdrawPoolB(positionId) {
+  return sendTx({
+    to: VEIN_CORE,
+    data: SEL.withdrawPoolB + encUint(positionId),
   });
 }
 

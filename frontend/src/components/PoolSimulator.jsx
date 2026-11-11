@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PixelButton from "./PixelButton";
 import { useToast } from "../contexts/ToastContext";
 import {
@@ -8,6 +8,8 @@ import {
 } from "../constants/vein";
 import {
   getPoolStats,
+  getEpoch,
+  getMintState,
   getConnectedAccount,
   connectWallet,
   isAgentHolder,
@@ -21,9 +23,35 @@ export default function PoolSimulator() {
   const [poolId, setPoolId] = useState("a");
   const [shares, setShares] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [liveReward, setLiveReward] = useState(null);
+  const [remainingPool, setRemainingPool] = useState(MAX_SHARES_PER_AGENT_ID);
   const { showToast } = useToast();
   const pool = POOLS[poolId];
   const deposit = shares * SHARE_BNB;
+  // M2: rewards are shown NET — claims pay 95% after the 5% claim fee —
+  // using the live per-share reward when the chain read works.
+  const grossReward = liveReward
+    ? poolId === "a"
+      ? liveReward.poolAReward
+      : liveReward.poolBReward
+    : pool.reward;
+  const netReward = grossReward * 0.95;
+
+  useEffect(() => {
+    let alive = true;
+    getEpoch().then((e) => {
+      if (alive) setLiveReward(e);
+    });
+    getConnectedAccount().then((a) => {
+      if (!a || !alive) return;
+      getMintState(a).then((s) => {
+        if (alive && s.live) setRemainingPool(s.remainingPool);
+      });
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const onDeposit = async () => {
     if (busy) return;
@@ -32,7 +60,7 @@ export default function PoolSimulator() {
       const stats = await getPoolStats();
       if (stats.locked) {
         showToast(
-          "Pools are still <b>locked</b> — they open only after the 200M VEIN sale sells out.",
+          "Pools are still <b>locked</b> — they open once 20% of the sale (8,000 shares) is sold.",
         );
         return;
       }
@@ -45,6 +73,12 @@ export default function PoolSimulator() {
       if (!holder) {
         showToast(
           "This wallet holds <b>no Agent ID</b> — pools are Agent ID holders only.",
+        );
+        return;
+      }
+      if (shares > remainingPool) {
+        showToast(
+          `Your lifetime pool cap leaves only <b>${remainingPool}</b> share(s) — lower the amount and try again.`,
         );
         return;
       }
@@ -61,9 +95,11 @@ export default function PoolSimulator() {
 
   const decShares = () => setShares((s) => Math.max(1, s - 1));
   const incShares = () => {
-    if (shares >= MAX_SHARES_PER_AGENT_ID) {
+    if (shares >= Math.min(MAX_SHARES_PER_AGENT_ID, remainingPool)) {
       showToast(
-        'Maximum of <span style="color:#ffc44d">10 shares</span> per Agent ID.',
+        remainingPool < MAX_SHARES_PER_AGENT_ID
+          ? `Your lifetime pool cap leaves only <span style="color:#ffc44d">${remainingPool} share(s)</span>.`
+          : 'Maximum of <span style="color:#ffc44d">10 shares</span> per Agent ID (lifetime).',
       );
       return;
     }
@@ -98,9 +134,9 @@ export default function PoolSimulator() {
 
       <div className="mt-4 grid grid-cols-3 gap-3 max-[560px]:grid-cols-1 max-[560px]:gap-2">
         <div className="max-[560px]:flex max-[560px]:items-baseline max-[560px]:justify-between max-[560px]:gap-4 max-[560px]:border-b-2 max-[560px]:border-dotted max-[560px]:border-[#2c1c4d] max-[560px]:pb-1.5">
-          <div className="font-ui text-[0.7rem] tracking-wide text-dim">VEIN / SHARE</div>
+          <div className="font-ui text-[0.7rem] tracking-wide text-dim">VEIN / SHARE — NET</div>
           <div className="font-num text-[1.65rem] leading-tight text-gold max-[640px]:text-[1.3rem]">
-            {fmt(pool.reward)}
+            {fmt(netReward)}
           </div>
         </div>
         <div className="max-[560px]:flex max-[560px]:items-baseline max-[560px]:justify-between max-[560px]:gap-4 max-[560px]:border-b-2 max-[560px]:border-dotted max-[560px]:border-[#2c1c4d] max-[560px]:pb-1.5">
@@ -162,16 +198,24 @@ export default function PoolSimulator() {
           </span>
         </div>
         <div className="flex justify-between gap-4 border-b-2 border-dotted border-[#2c1c4d] py-2 text-[0.95rem]">
-          <span className="pt-1 font-ui text-[0.75rem] tracking-wide text-dim">REWARD VEIN</span>
+          <span className="pt-1 font-ui text-[0.75rem] tracking-wide text-dim">REWARD VEIN — NET (AFTER 5% CLAIM FEE)</span>
           <span className="text-right font-num text-[1.35rem] text-gold max-[640px]:text-[1.15rem]">
-            {fmt(shares * pool.reward)} VEIN
+            {fmt(shares * netReward)} VEIN
           </span>
         </div>
         <div className="flex justify-between gap-4 border-b-2 border-dotted border-[#2c1c4d] py-2 text-[0.95rem]">
           <span className="pt-1 font-ui text-[0.75rem] tracking-wide text-dim">{pool.backLabel}</span>
-          <span className="text-right font-num text-[1.35rem] text-mint max-[640px]:text-[1.15rem]">
-            {fmtBnb(pool.back(deposit))} BNB
-          </span>
+          {poolId === "b" ? (
+            // M3: Pool B returns LP underlying (VEIN + BNB) — its value
+            // floats with the pair, so no fixed BNB number is shown.
+            <span className="text-right font-num text-[1.35rem] text-mint max-[640px]:text-[1.15rem]">
+              VEIN + BNB
+            </span>
+          ) : (
+            <span className="text-right font-num text-[1.35rem] text-mint max-[640px]:text-[1.15rem]">
+              {fmtBnb(pool.back(deposit))} BNB
+            </span>
+          )}
         </div>
         <div className="flex justify-between gap-4 py-2 text-[0.95rem]">
           <span className="pt-1 font-ui text-[0.75rem] tracking-wide text-dim">AVAILABLE</span>
