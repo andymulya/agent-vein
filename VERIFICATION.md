@@ -70,3 +70,27 @@ Math below was re-checked in Python (integer math, no floating point).
 ## Upgradability
 - VeinCore behind TransparentUpgradeableProxy; admin = ProxyAdmin owned by Andy's wallet.
   Token is NOT upgradeable (plain ERC20, immutable logic).
+
+## Sourcify verification — LIVE, 2026-11-11 ~11:17 WIB
+All 4 contracts verified on BSC mainnet (chain 56) via Sourcify v2 — **exact_match
+(creation + runtime)** for every one. Compiler: solc 0.8.28+commit.7893614a, optimizer
+200 runs, OZ 5.0.2 (local sources; Remix build used the same constructor semantics —
+OZ TransparentUpgradeableProxy deploys its own ProxyAdmin from `initialOwner`).
+Verified with a standard JSON built from the local compile setup; the stdJson compiles
+locally byte-for-byte identical to all 4 artifacts, and each deploy tx's creation input
+matches local bytecode + constructor args exactly.
+- VeinCore impl `0xb7bd9d17e6800744a263ef8fac4cf21b3519f4e2` — exact_match
+  (https://sourcify.dev/server/v2/contract/56/0xb7bd9d17e6800744a263ef8fac4cf21b3519f4e2)
+- Proxy `0x869d0edf28cc79b16c1b6f8fb3b399edcbe539f6` — exact_match
+  (https://sourcify.dev/server/v2/contract/56/0x869d0edf28cc79b16c1b6f8fb3b399edcbe539f6)
+- VeinToken `0x17ccdcd9763e824a59c78f60c10e6976d5663479` — exact_match
+  (https://sourcify.dev/server/v2/contract/56/0x17ccdcd9763e824a59c78f60c10e6976d5663479)
+- ProxyAdmin (auto) `0xe73a2630b544bd8c757364c1d71c00a2aae0273c` — exact_match
+  (https://sourcify.dev/server/v2/contract/56/0xe73a2630b544bd8c757364c1d71c00a2aae0273c)
+Notes: v2 verify endpoint is `POST /server/v2/verify/{chainId}/{address}` with a JSON
+body `{"stdJsonInput": {...}, "compilerVersion": "0.8.28+commit.7893614a",
+"contractIdentifier": "path:Contract"}` — plain `"0.8.28"` fails with "Failed fetching
+solc"; the full commit-hash version is required. Job returns a verificationId; poll
+`GET /server/v2/verify/{verificationId}`.
+Live site re-checked after verification: https://agent-miner-vein.vercel.app HTTP 200,
+on-chain `saleOpen()==1` on the proxy.
