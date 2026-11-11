@@ -1,5 +1,6 @@
 import SectionHead from "../components/SectionHead";
 import RuleAccordion from "../components/RuleAccordion";
+import AgentCommand from "../components/AgentCommand";
 import { HOW_IT_WORKS } from "../constants/vein";
 
 /** How it works + rules section. */
@@ -145,6 +146,8 @@ export default function RulesPage() {
             </ul>
           </RuleAccordion>
         </div>
+
+        <AgentCommand />
       </div>
     </section>
   );
