@@ -63,6 +63,14 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
     uint256 public constant COMMUNITY_ALLOC = 50_000_000 ether;
     uint256 public constant TEAM_VEST_AMT = 80_000_000 ether;
 
+    // ---------- v2: share-based sale (1 share = 5,000 VEIN) ----------
+    uint256 public constant VEIN_PER_SHARE = 5000 ether;
+    uint256 public constant FREE_SHARES = 1000; // first-mint free quota (community-funded)
+    uint256 public constant FREE_MINT_AMOUNT = 5000 ether; // 1 free share per wallet
+    uint256 public constant MAX_MINT_SHARES = 10; // lifetime mint cap per wallet
+    uint256 public constant MAX_POOL_SHARES = 10; // lifetime pool-deposit cap per wallet
+    uint256 public constant SALE_THRESHOLD = 40_000_000 ether; // 20% of SALE_ALLOC: pools+LP open
+
     // ---------- State ----------
     IVeinToken public token;
     address public opsWallet;
@@ -113,8 +121,15 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
     mapping(address => address) public referrerOf; // set on first stake, immutable after
     mapping(address => bool) public referralPaid;
 
+    // ---------- v2 state (APPENDED after all v1 state — never reorder v1) ----------
+    uint256 public freeClaimed; // free shares claimed (quota FREE_SHARES)
+    uint256 public lpSeeded; // VEIN actually added to LP so far (incremental seeding)
+    mapping(address => bool) public freeMinted; // wallet already used its free share
+    mapping(address => uint256) public mintedShares; // lifetime sale shares per wallet
+    mapping(address => uint256) public poolSharesMinted; // lifetime pool shares per wallet
+
     // ---------- Events ----------
-    event Bought(address indexed buyer, uint256 bnbIn, uint256 veinOut);
+    event SharesMinted(address indexed buyer, uint256 shares, uint256 freeShares, uint256 bnbIn, uint256 veinOut);
     event PoolADeposited(uint256 indexed id, address indexed user, uint256 shares, uint256 reward);
     event PoolAClaimed(uint256 indexed id, address indexed user, uint256 veinOut, uint256 bnbOut);
     event PoolBDeposited(uint256 indexed id, address indexed user, uint256 shares, uint256 reward, uint256 lpTokens);
@@ -132,9 +147,11 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
     error ZeroAddress();
     error NotAgentHolder();
     error SaleClosed();
-    error SaleNotSoldOut();
+    error ThresholdNotReached();
     error PoolsNotOpen();
     error BadAmount();
+    error ExceedsShareCap();
+    error ExceedsRemaining();
     error NoReward();
     error MiningExhausted();
     error NotOwner();
@@ -226,6 +243,14 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         bnbAmt = (reserveBnb * lpTokens) / total;
     }
 
+    /// @notice Current (VEIN, BNB) reserves of the pair. Only valid once the pair exists.
+    function _pairReserves() internal view returns (uint256 reserveVein, uint256 reserveBnb) {
+        IPancakePair p = IPancakePair(pair);
+        (uint112 r0, uint112 r1,) = p.getReserves();
+        reserveVein = p.token0() == address(token) ? uint256(r0) : uint256(r1);
+        reserveBnb = p.token0() == address(token) ? uint256(r1) : uint256(r0);
+    }
+
     // ---------- Internal helpers ----------
 
     function _sendBnb(address to, uint256 amount) internal {
@@ -258,32 +283,52 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         }
     }
 
-    // ---------- Token sale (Agent ID holders only, no time limit) ----------
+    // ---------- Token sale: share-based mint (Agent ID holders only, no time limit) ----------
 
-    /// @notice Buy VEIN at the fixed rate. Excess BNB is refunded if the buy exceeds the
-    ///         remaining sale allocation. Sale proceeds are held here for LP seeding.
-    function buyVein() external payable nonReentrant {
+    /// @notice Mint n shares (1 share = 5,000 VEIN, ≈ $0.50 at the fixed rate).
+    ///         The FIRST mint of a wallet is free for 1 share while the 1,000-share free
+    ///         quota lasts; minting more than 1 share on the first mint pays for n-1 shares.
+    ///         Free VEIN comes from the community allocation and NEVER counts toward
+    ///         `purchased` / `saleSold` (audit C1/C3: otherwise it could be refunded for
+    ///         BNB, or inflate the 20% threshold). Lifetime cap: 10 shares per wallet.
+    ///         Cost is ceiling division so the contract never shorts a share; excess BNB
+    ///         is refunded. If the free quota is exhausted between the UI read and the tx,
+    ///         the mint charges full price for all n shares (msg.value must cover it).
+    function mintShares(uint256 n) external payable nonReentrant {
         if (!saleOpen) revert SaleClosed();
         if (!_isAgent(msg.sender)) revert NotAgentHolder();
-        if (msg.value == 0) revert BadAmount();
-        uint256 veinOut = (msg.value * VEIN_PER_BNB) / 1 ether;
-        uint256 bnbUsed = msg.value;
-        if (veinOut > saleRemaining) {
-            veinOut = saleRemaining;
-            bnbUsed = (veinOut * 1 ether) / VEIN_PER_BNB;
+        if (n == 0 || n > MAX_MINT_SHARES) revert BadAmount();
+        if (mintedShares[msg.sender] + n > MAX_MINT_SHARES) revert ExceedsShareCap();
+        uint256 freeShares = 0;
+        if (!freeMinted[msg.sender] && freeClaimed < FREE_SHARES) {
+            freeShares = 1;
         }
-        if (veinOut == 0) revert BadAmount();
+        uint256 paidShares = n - freeShares;
+        uint256 paidVein = paidShares * VEIN_PER_SHARE;
+        uint256 freeVein = freeShares * VEIN_PER_SHARE;
+        if (paidVein > saleRemaining) revert ExceedsRemaining();
+        if (freeVein > communityRemaining) revert ExceedsRemaining();
+        uint256 cost = (paidVein * 1 ether + VEIN_PER_BNB - 1) / VEIN_PER_BNB;
+        if (msg.value < cost) revert BadAmount();
         // Effects.
-        saleRemaining -= veinOut;
-        saleSold += veinOut;
-        saleProceeds += bnbUsed;
-        purchased[msg.sender] += veinOut;
-        if (saleSold >= SALE_ALLOC) saleOpen = false;
+        mintedShares[msg.sender] += n;
+        if (freeShares > 0) {
+            freeMinted[msg.sender] = true;
+            freeClaimed += 1;
+            communityRemaining -= freeVein;
+        }
+        if (paidVein > 0) {
+            saleRemaining -= paidVein;
+            saleSold += paidVein;
+            saleProceeds += cost;
+            purchased[msg.sender] += paidVein;
+            if (saleSold >= SALE_ALLOC) saleOpen = false;
+        }
         // Interactions.
-        token.transfer(msg.sender, veinOut);
-        uint256 excess = msg.value - bnbUsed;
+        token.transfer(msg.sender, paidVein + freeVein);
+        uint256 excess = msg.value - cost;
         if (excess > 0) _sendBnb(msg.sender, excess);
-        emit Bought(msg.sender, bnbUsed, veinOut);
+        emit SharesMinted(msg.sender, n, freeShares, cost, paidVein + freeVein);
     }
 
     // ---------- Pool A: refundable BNB deposit, 750 VEIN/share, refund after 24h ----------
@@ -294,6 +339,7 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         if (msg.value < SHARE_PRICE || msg.value % SHARE_PRICE != 0) revert BadAmount();
         uint256 shares = msg.value / SHARE_PRICE;
         if (shares > type(uint64).max) revert BadAmount();
+        if (poolSharesMinted[msg.sender] + shares > MAX_POOL_SHARES) revert ExceedsShareCap();
         uint256 reward = shares * rewardPerShareA();
         if (reward == 0) revert NoReward();
         if (miningReserved + miningPaid + reward > MINING_ALLOC) revert MiningExhausted();
@@ -309,6 +355,7 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         totalShares += shares;
         poolABnb += msg.value;
         miningReserved += reward;
+        poolSharesMinted[msg.sender] += shares;
         _recordStake(msg.sender, referrer);
         emit PoolADeposited(id, msg.sender, shares, reward);
     }
@@ -345,6 +392,7 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         if (msg.value < SHARE_PRICE || msg.value % SHARE_PRICE != 0) revert BadAmount();
         uint256 shares = msg.value / SHARE_PRICE;
         if (shares > type(uint64).max) revert BadAmount();
+        if (poolSharesMinted[msg.sender] + shares > MAX_POOL_SHARES) revert ExceedsShareCap();
         uint256 reward = shares * rewardPerShareB();
         if (reward == 0) revert NoReward();
         if (miningReserved + miningPaid + reward > MINING_ALLOC) revert MiningExhausted();
@@ -361,6 +409,7 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         }));
         totalShares += shares;
         miningReserved += reward;
+        poolSharesMinted[msg.sender] += shares;
         _recordStake(msg.sender, referrer);
         // Interactions: swap half the BNB -> VEIN, then add LP with the other half.
         uint256 halfBnb = msg.value / 2;
@@ -459,35 +508,69 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         emit TeamVestingClaimed(msg.sender, claimable);
     }
 
-    // ---------- LP seeding: opens trading + pools (permissionless, once) ----------
+    // ---------- LP seeding: opens trading + pools (permissionless, repeatable) ----------
 
-    /// @notice Anyone may call once the sale is sold out. Pairs the 150M VEIN liquidity
-    ///         allocation with ALL sale BNB, burns the LP tokens to DEAD, then opens trading
-    ///         (sets the snipe-tax block) and opens the pools.
-    function seedLiquidity() external nonReentrant {
-        if (poolsOpen) revert AlreadyOpen();
-        if (saleSold < SALE_ALLOC) revert SaleNotSoldOut();
-        uint256 bnbAmount = saleProceeds;
-        if (bnbAmount == 0) revert NoProceeds();
-        uint256 tokenAmount = LP_ALLOC;
-        // Effects.
-        poolsOpen = true;
-        lpRemaining = 0;
-        saleProceeds = 0;
-        // Interactions.
-        token.approve(ROUTER, tokenAmount);
-        (,, uint256 liquidity) = IPancakeRouter(ROUTER).addLiquidityETH{value: bnbAmount}(
+    /// @notice OWNER-ONLY (Andy's decision 2026-11-11: when the sale reaches 20%, do NOT
+    ///         open pools/LP automatically — notify Andy first and let him decide when to
+    ///         seed). Seeds the LP incrementally: each call adds only the not-yet-seeded
+    ///         share of the 150M VEIN allocation (LP_ALLOC x saleSold / SALE_ALLOC) paired
+    ///         with ALL sale BNB collected since the last seed, and burns the LP tokens to
+    ///         DEAD. The first call also opens trading (sets the snipe-tax block) and opens
+    ///         the pools (one-way). Only callable once PAID sales reach 20% (40M VEIN).
+    ///         price moves between seeds leave the remainder earmarked for the next seed
+    ///         instead of leaking it into the tax-compound pool (audit C2).
+    /// @dev Slippage mins are computed from the CURRENT pair ratio when the pair exists.
+    ///      The sale ratio (5,155,500 VEIN/BNB) and the market ratio drift apart as soon
+    ///      as trading opens, so fixed mins anchored to the sale ratio would brick later
+    ///      seeds (revert) once the price moves >5% — stranding the remaining LP + all
+    ///      later proceeds. The 5% band still applies, to the current market ratio, which
+    ///      is what the router executes against.
+    function seedLiquidity() external nonReentrant onlyOwner {
+        if (saleSold < SALE_THRESHOLD) revert ThresholdNotReached();
+        uint256 target = (LP_ALLOC * saleSold) / SALE_ALLOC;
+        if (target <= lpSeeded) revert NoProceeds();
+        uint256 veinToSeed = target - lpSeeded;
+        uint256 bnbToSeed = saleProceeds;
+        if (bnbToSeed == 0) revert NoProceeds();
+        // Mins from the current pair ratio (or the desired amounts on the first seed).
+        uint256 amountTokenMin;
+        uint256 amountETHMin;
+        if (pair != address(0)) {
+            (uint256 reserveVein, uint256 reserveBnb) = _pairReserves();
+            uint256 optToken = (bnbToSeed * reserveVein) / reserveBnb;
+            uint256 optBnb = (veinToSeed * reserveBnb) / reserveVein;
+            if (optToken <= veinToSeed) {
+                amountTokenMin = (optToken * (10000 - LP_SLIPPAGE_BPS)) / 10000;
+                amountETHMin = (bnbToSeed * (10000 - LP_SLIPPAGE_BPS)) / 10000;
+            } else {
+                amountTokenMin = (veinToSeed * (10000 - LP_SLIPPAGE_BPS)) / 10000;
+                amountETHMin = (optBnb * (10000 - LP_SLIPPAGE_BPS)) / 10000;
+            }
+        } else {
+            amountTokenMin = (veinToSeed * (10000 - LP_SLIPPAGE_BPS)) / 10000;
+            amountETHMin = (bnbToSeed * (10000 - LP_SLIPPAGE_BPS)) / 10000;
+        }
+        // Interactions (router returns the amounts actually taken).
+        token.approve(ROUTER, veinToSeed);
+        (uint256 amountToken, uint256 amountETH, uint256 liquidity) = IPancakeRouter(ROUTER).addLiquidityETH{value: bnbToSeed}(
             address(token),
-            tokenAmount,
-            (tokenAmount * (10000 - LP_SLIPPAGE_BPS)) / 10000,
-            (bnbAmount * (10000 - LP_SLIPPAGE_BPS)) / 10000,
+            veinToSeed,
+            amountTokenMin,
+            amountETHMin,
             DEAD,
             block.timestamp + 600
         );
         token.approve(ROUTER, 0);
-        pair = IPancakeFactory(FACTORY).getPair(address(token), WBNB);
-        token.openTrading();
-        emit LiquiditySeeded(pair, tokenAmount, bnbAmount, liquidity);
+        // Effects (actual amounts used).
+        lpSeeded += amountToken;
+        lpRemaining = LP_ALLOC - lpSeeded;
+        saleProceeds -= amountETH;
+        if (!poolsOpen) {
+            poolsOpen = true;
+            pair = IPancakeFactory(FACTORY).getPair(address(token), WBNB);
+            if (!token.tradingOpen()) token.openTrading();
+        }
+        emit LiquiditySeeded(pair, amountToken, amountETH, liquidity);
     }
 
     // ---------- Tax compounding: accumulated 1% LP tax -> LP, LP tokens burned ----------
@@ -506,10 +589,13 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         uint256[] memory quoted = IPancakeRouter(ROUTER).getAmountsOut(half, path);
         uint256 minOut = (quoted[1] * (10000 - SWAP_SLIPPAGE_BPS)) / 10000;
         token.approve(ROUTER, half);
-        uint256[] memory swapped = IPancakeRouter(ROUTER).swapExactTokensForETHSupportingFeeOnTransferTokens(
+        // NOTE: the router returns NO data for this function (see Interfaces.sol), so
+        // the BNB received is measured by balance difference, not a return value.
+        uint256 bnbBefore = address(this).balance;
+        IPancakeRouter(ROUTER).swapExactTokensForETHSupportingFeeOnTransferTokens(
             half, minOut, path, address(this), block.timestamp + 600
         );
-        uint256 bnbReceived = swapped[1];
+        uint256 bnbReceived = address(this).balance - bnbBefore;
         uint256 otherHalf = amount - half;
         token.approve(ROUTER, otherHalf);
         (,, uint256 liquidity) = IPancakeRouter(ROUTER).addLiquidityETH{value: bnbReceived}(
@@ -548,7 +634,7 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         saleSold -= veinAmount;
         saleRemaining += veinAmount;
         saleProceeds -= bnbOut;
-        if (saleSold < SALE_ALLOC) saleOpen = true;
+        if (saleSold < SALE_ALLOC && !poolsOpen) saleOpen = true;
         // Interactions.
         token.transferFrom(msg.sender, address(this), veinAmount);
         _sendBnb(msg.sender, bnbOut);
@@ -566,6 +652,7 @@ contract VeinCore is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         emit OpsWalletUpdated(oldWallet, newOpsWallet);
     }
 
-    /// @dev Storage gap for future upgrades.
-    uint256[50] private __gap;
+    /// @dev Storage gap for future upgrades (v2 used 5 slots: freeClaimed, lpSeeded,
+    ///      freeMinted, mintedShares, poolSharesMinted).
+    uint256[45] private __gap;
 }

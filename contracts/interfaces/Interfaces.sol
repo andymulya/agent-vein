@@ -9,6 +9,7 @@ interface IVeinToken {
     function balanceOf(address account) external view returns (uint256);
     function allowance(address owner, address spender) external view returns (uint256);
     function openTrading() external;
+    function tradingOpen() external view returns (bool);
 }
 
 /// @notice Minimal PancakeSwap V2 router interface (only the functions VeinCore uses).
@@ -25,7 +26,12 @@ interface IPancakeRouter {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external returns (uint256[] memory amounts);
+    ) external;
+    // NOTE: the real router returns NO data for the function above (verified against
+    // the mainnet bytecode: raw eth_call returns 0x, while swapExactTokensForETH
+    // returns a proper uint256[]). Declaring a return value would make every call
+    // revert on ABI decoding — that is why v1's compoundLp could never succeed.
+    // Callers must measure the BNB received by balance difference, not a return value.
     function addLiquidityETH(
         address token,
         uint256 amountTokenDesired,
