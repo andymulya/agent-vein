@@ -26,7 +26,7 @@ export const BSCSCAN_ADDRESS = "https://bscscan.com/address/";
 /** The live core users interact with (TransparentUpgradeableProxy). */
 export const VEIN_CORE = "0x869d0edf28cc79b16c1b6f8fb3b399edcbe539f6";
 export const VEIN_TOKEN = "0x17ccdcd9763e824a59c78f60c10e6976d5663479";
-export const VEIN_CORE_IMPL = "0xb7bd9d17e6800744a263ef8fac4cf21b3519f4e2";
+export const VEIN_CORE_IMPL = "0x534be3a81b70ffec244162838f7ab6c37f056676"; // v2 (live since 2026-11-11 upgrade; v1 was 0xb7bd9d17e6800744a263ef8fac4cf21b3519f4e2)
 export const PROXY_ADMIN = "0xe73a2630b544bd8c757364c1d71c00a2aae0273c";
 export const OPS_WALLET = "0x72ebd7a99e416e737559206a7ee96c549b1c9210";
 export const AGENT_ID_REGISTRY = "0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F";
