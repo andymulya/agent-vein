@@ -146,7 +146,7 @@ export const HOW_IT_WORKS = [
   {
     n: "01",
     title: "MINT $VEIN",
-    text: "Agent ID holders mint VEIN at the fixed price of $0.0001 — 1 share = 5,000 VEIN ($0.50), maximum 10 shares per wallet, no time limit.",
+    text: "Agent ID holders mint VEIN at the fixed price of $0.0001 — 1 share = 5,000 VEIN (≈ 0.000727 BNB), maximum 10 shares per wallet, no time limit.",
   },
   {
     n: "02",

@@ -202,7 +202,7 @@ export default function BuyCalculator() {
       <div className="mt-3 flex items-start gap-2.5 text-[0.9rem] text-mut">
         <span className="mt-1 h-4 w-4 flex-none bg-gold" />
         <span>
-          1 share = {fmt(VEIN_PER_SHARE)} VEIN (≈ $0.50) · Minimum 1 share ·
+          1 share = {fmt(VEIN_PER_SHARE)} VEIN (≈ 0.000727 BNB) · Minimum 1 share ·
           maximum {MAX_MINT_SHARES} shares per wallet, lifetime
           {mintState.live && mintState.mintedShares > 0
             ? ` — you have minted ${mintState.mintedShares}, ${mintState.remainingMint} left`

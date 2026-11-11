@@ -46,7 +46,7 @@ export default function RulesPage() {
               </li>
               <li>
                 Only wallets holding an <b>Agent ID</b> can mint. Minimum 1
-                share ($0.50), maximum 10 shares per wallet, lifetime.
+                share (≈ 0.000727 BNB), maximum 10 shares per wallet, lifetime.
               </li>
               <li>
                 All sale proceeds go into <b>permanent LP</b>, not to the

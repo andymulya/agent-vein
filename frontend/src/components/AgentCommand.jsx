@@ -14,7 +14,7 @@ Agent ID registry: 0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F
 ACTIONS
 1. MINT VEIN — call mintShares(n) on the Core (payable, n = number of
    shares, 1–10 per call, maximum 10 shares per wallet LIFETIME). 1 share
-   = 5,000 VEIN ≈ $0.50 at the fixed $0.0001 per VEIN (about 6,874 VEIN
+   = 5,000 VEIN (≈ 0.000727 BNB) at the fixed $0.0001 per VEIN (about 6,874 VEIN
    per 0.001 BNB). A wallet's FIRST mint gets 1 share FREE while the
    1,000-share free quota lasts — so a first mint of n shares costs
    n−1 shares. Cost = ceiling((n−free) × 5,000 VEIN / 6,874,000
