@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Panel from "../components/Panel";
 import SectionHead from "../components/SectionHead";
 import BuyCalculator from "../components/BuyCalculator";
+import AgentCommand from "../components/AgentCommand";
 import SegmentedBar from "../components/SegmentedBar";
 import Chip from "../components/Chip";
 import { getSaleStatus, getFreePhase } from "../services/preview";
@@ -167,6 +168,8 @@ export default function BuyPage() {
             </p>
           </Panel>
         </div>
+
+        <AgentCommand />
       </div>
     </section>
   );
