@@ -6,6 +6,13 @@ import {
   SHARE_BNB,
   MAX_SHARES_PER_AGENT_ID,
 } from "../constants/vein";
+import {
+  getPoolStats,
+  getConnectedAccount,
+  connectWallet,
+  isAgentHolder,
+  depositPool,
+} from "../services/preview";
 import { fmt, fmtBnb } from "../utils/format";
 import HalvingChart from "./HalvingChart";
 
@@ -13,9 +20,44 @@ import HalvingChart from "./HalvingChart";
 export default function PoolSimulator() {
   const [poolId, setPoolId] = useState("a");
   const [shares, setShares] = useState(1);
-  const { showToast, showPreviewToast } = useToast();
+  const [busy, setBusy] = useState(false);
+  const { showToast } = useToast();
   const pool = POOLS[poolId];
   const deposit = shares * SHARE_BNB;
+
+  const onDeposit = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const stats = await getPoolStats();
+      if (stats.locked) {
+        showToast(
+          "Pools are still <b>locked</b> — they open only after the 200M VEIN sale sells out.",
+        );
+        return;
+      }
+      let account = await getConnectedAccount();
+      if (!account) {
+        showToast("Connect your Agent Wallet first — check your wallet popup.");
+        account = await connectWallet();
+      }
+      const holder = await isAgentHolder(account);
+      if (!holder) {
+        showToast(
+          "This wallet holds <b>no Agent ID</b> — pools are Agent ID holders only.",
+        );
+        return;
+      }
+      const hash = await depositPool(poolId, shares);
+      showToast(
+        `<span style="color:#7dffa8">DEPOSIT SENT</span> — ${shares} share(s) to Pool ${poolId.toUpperCase()}. Tx ${hash.slice(0, 10)}…${hash.slice(-6)}. Confirm it in your wallet.`,
+      );
+    } catch (e) {
+      showToast(`Deposit failed: ${String(e?.message || e).slice(0, 120)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const decShares = () => setShares((s) => Math.max(1, s - 1));
   const incShares = () => {
@@ -139,8 +181,8 @@ export default function PoolSimulator() {
         </div>
       </div>
 
-      <PixelButton className="mt-5 w-full" onClick={showPreviewToast}>
-        ⛏ DEPOSIT TO POOL
+      <PixelButton className="mt-5 w-full" onClick={onDeposit}>
+        {busy ? "…WAITING FOR WALLET" : "⛏ DEPOSIT TO POOL"}
       </PixelButton>
       <p className="mt-3 text-[0.86rem] text-dim">
         Positions are recorded in the contract — no NFT, non-transferable.

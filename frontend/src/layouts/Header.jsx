@@ -1,12 +1,45 @@
+import { useEffect, useState } from "react";
 import { NAV_ITEMS } from "../constants/vein";
 import { useActiveSection } from "../hooks/useActiveSection";
 import { useToast } from "../contexts/ToastContext";
-import { getEpoch } from "../services/preview";
+import {
+  getEpoch,
+  getConnectedAccount,
+  connectWallet,
+  shortAddress,
+} from "../services/preview";
 
 export default function Header() {
   const active = useActiveSection();
-  const { showPreviewToast } = useToast();
-  const epoch = getEpoch();
+  const { showToast } = useToast();
+  const [epoch, setEpoch] = useState({ epoch: 1, poolAReward: 750 });
+  const [account, setAccount] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    getEpoch().then((e) => {
+      if (alive) setEpoch(e);
+    });
+    getConnectedAccount().then((a) => {
+      if (alive) setAccount(a);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const onConnect = async () => {
+    if (account) return;
+    try {
+      const acc = await connectWallet();
+      setAccount(acc);
+      showToast(
+        `Wallet connected — <b>${shortAddress(acc)}</b>. Sale is Agent ID holders only.`,
+      );
+    } catch (e) {
+      showToast(`Connect failed: ${String(e?.message || e).slice(0, 120)}`);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b-[3px] border-black bg-[#0b0614]/92 shadow-[0_3px_0_#3a2563] backdrop-blur-md">
@@ -47,10 +80,10 @@ export default function Header() {
 
         <button
           type="button"
-          onClick={showPreviewToast}
-          className="btn mint small ml-auto max-[640px]:px-2.5 max-[640px]:py-2 max-[640px]:text-center max-[640px]:text-[0.7rem] max-[380px]:px-2 max-[380px]:text-[0.64rem]"
+          onClick={onConnect}
+          className="btn mint small ml-auto max-[640px]:px-2.5 max-[640px]:py-2 max-[640px]:text-center max-[640px]:text-[0.7rem] max-[380px]:px-2.5 max-[640px]:text-[0.64rem]"
         >
-          ▤ Connect Agent Wallet
+          {account ? `▤ ${shortAddress(account)}` : "▤ Connect Agent Wallet"}
         </button>
       </div>
     </header>

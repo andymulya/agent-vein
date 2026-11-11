@@ -4,6 +4,35 @@
  * render time (see utils/format.js). No refund information lives here.
  */
 
+/**
+ * LIVE DEPLOYED CONTRACTS — BSC mainnet (chain 56).
+ * Deployed 2026-11-11 by the ops wallet via Remix (solc 0.8.28).
+ * NEVER use the main wallet 0xD140... or second wallet 0x3819... here.
+ * Abandoned (never reference): old proxy 0x927bEdF8005a65a55c1fF56de7a25847DF11698F,
+ * old admin 0xba425431a38cfe37229cbd74091e06a551e21417,
+ * standalone ProxyAdmin 0xc7aa4405741da617422961fba69c3bc3589dc3ad.
+ */
+export const CHAIN_ID = 56;
+export const CHAIN_NAME = "BNB Smart Chain Mainnet";
+export const RPC_URLS = [
+  "https://bsc-dataseed.bnbchain.org",
+  "https://bsc-dataseed2.bnbchain.org",
+  "https://bsc-dataseed1.defibit.io",
+  "https://bsc-dataseed1.ninicoin.io",
+];
+export const BSCSCAN_TX = "https://bscscan.com/tx/";
+export const BSCSCAN_ADDRESS = "https://bscscan.com/address/";
+
+/** The live core users interact with (TransparentUpgradeableProxy). */
+export const VEIN_CORE = "0x869d0edf28cc79b16c1b6f8fb3b399edcbe539f6";
+export const VEIN_TOKEN = "0x17ccdcd9763e824a59c78f60c10e6976d5663479";
+export const VEIN_CORE_IMPL = "0xb7bd9d17e6800744a263ef8fac4cf21b3519f4e2";
+export const PROXY_ADMIN = "0xe73a2630b544bd8c757364c1d71c00a2aae0273c";
+export const OPS_WALLET = "0x72ebd7a99e416e737559206a7ee96c549b1c9210";
+export const AGENT_ID_REGISTRY = "0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F";
+/** Block the live proxy was deployed in — start of eth_getLogs scans. */
+export const DEPLOY_BLOCK = 132897127;
+
 export const SALE_PRICE = 0.0001; // USD per VEIN
 export const TOTAL_SUPPLY = 1_000_000_000;
 export const SALE_ALLOCATION = 200_000_000;
@@ -92,8 +121,7 @@ export const TOKENOMICS = [
   },
 ];
 
-export const FEE_CARDS = [
-  {
+export const FEE_CARDS = [  {
     value: "2%",
     title: "TRANSFER TAX",
     text: "Every buy and sell on the pair is taxed 2%: 1% to operations (in BNB) and 1% to LP that is burned. Regular wallet-to-wallet transfers are not taxed.",
@@ -136,13 +164,13 @@ export const HOW_IT_WORKS = [
 export const PULSE_LOG = [
   {
     tag: "SYSTEM",
-    tone: "sys",
-    html: "<b>Contract not yet deployed</b> — this page is a frontend preview.",
+    tone: "ok",
+    html: "<b>Contract live on BSC mainnet</b> — sale open, Agent ID only.",
   },
   {
     tag: "SALE",
     tone: "inf",
-    html: "The $VEIN sale awaits launch — Agent ID only, no time limit.",
+    html: "The $VEIN sale is live — Agent ID only, no time limit.",
   },
   {
     tag: "POOL",

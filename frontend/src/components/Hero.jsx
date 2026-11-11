@@ -31,7 +31,7 @@ export default function Hero() {
       <div className="relative z-[2] mx-auto max-w-[980px] px-4 pb-9 pt-12 max-[640px]:px-3 max-[640px]:pb-6 max-[640px]:pt-9">
         <span className="inline-flex items-center gap-2 border-2 border-mint bg-[#04140e]/72 px-3 py-2 font-ui text-[0.78rem] font-bold tracking-[0.14em] text-mint shadow-[4px_4px_0_#000]">
           <span className="blink-fast h-[9px] w-[9px] bg-blood shadow-[0_0_10px_#ff2e4d]" />
-          SALE OPENING SOON
+          SALE LIVE — BSC MAINNET
         </span>
 
         <h1 className="title-gradient mx-0 mb-2 mt-6 font-disp text-[clamp(2rem,8.5vw,4.6rem)] leading-[1.12]">

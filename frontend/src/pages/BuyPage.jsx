@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import Panel from "../components/Panel";
 import SectionHead from "../components/SectionHead";
 import BuyCalculator from "../components/BuyCalculator";
@@ -14,7 +15,32 @@ import {
 
 /** Buy section: fixed-price sale calculator + live sale status. */
 export default function BuyPage() {
-  const sale = getSaleStatus();
+  const [sale, setSale] = useState({
+    sold: 0,
+    allocation: SALE_ALLOCATION,
+    pct: 0,
+    status: "LOADING…",
+    poolsOpen: false,
+    proceedsBnb: 0,
+  });
+
+  useEffect(() => {
+    let alive = true;
+    getSaleStatus().then((s) => {
+      if (alive) setSale(s);
+    });
+    const t = setInterval(() => {
+      getSaleStatus().then((s) => {
+        if (alive) setSale(s);
+      });
+    }, 30000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, []);
+
+  const filled = Math.min(40, Math.round((sale.pct / 100) * 40));
 
   return (
     <section className="scroll-mt-24 px-4 py-12 pb-2 max-[640px]:px-3 max-[640px]:pt-9" id="beli">
@@ -34,7 +60,7 @@ export default function BuyPage() {
 
           <Panel
             title="SALE STATUS"
-            head={<Chip tone="red">AWAITING LAUNCH</Chip>}
+            head={<Chip tone="red">{sale.status}</Chip>}
           >
             <div className="font-num text-[2rem] leading-none max-[640px]:text-[1.55rem]">
               {fmt(sale.sold)}
@@ -44,7 +70,7 @@ export default function BuyPage() {
               </span>
             </div>
             <div className="mt-3">
-              <SegmentedBar total={40} filled={0} tones={["f1", "f2", "f3", "f4"]} />
+              <SegmentedBar total={40} filled={filled} tones={["f1", "f2", "f3", "f4"]} />
             </div>
             <div className="mt-4 grid grid-cols-2 border-2 border-line">
               {[
@@ -69,7 +95,7 @@ export default function BuyPage() {
             <p className="mt-4 text-[0.9rem] text-mut">
               Pool A &amp; Pool B stay locked while the sale runs — the pools
               start pulsing only after all 200M VEIN are sold and the LP is
-              formed.
+              formed. {fmtBnb(sale.proceedsBnb)} BNB collected so far.
             </p>
             <p className="mt-2 text-[0.9rem] text-mut">
               There is no countdown. The sale stops only when the allocation

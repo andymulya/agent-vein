@@ -11,9 +11,8 @@ export default function Footer() {
           </div>
           <p className="mt-2 max-w-[560px] text-[0.85rem] text-dim">
             $VEIN deposit mining on BNB Chain — Agent ID only, no NFT,
-            positions recorded in the contract. This page is a frontend
-            preview: the contract is not deployed yet, and there is no
-            official contract address, pair, or trading link. Do not trust
+            positions recorded in the contract. Contracts are live on BSC
+            mainnet (see the strip at the top of the page). Do not trust
             any other page claiming otherwise.
           </p>
         </div>
@@ -22,7 +21,7 @@ export default function Footer() {
           <br />
           PRICE · $0.0001
           <br />
-          STATUS · PREVIEW
+          STATUS · LIVE
         </p>
       </div>
     </footer>

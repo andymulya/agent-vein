@@ -1,16 +1,38 @@
+import { useEffect, useState } from "react";
 import { useToast } from "../contexts/ToastContext";
 import { getReferralStats } from "../services/preview";
 import { fmt } from "../utils/format";
 
 /** Referral link box + qualified-referral stats. */
-export default function ReferralBox() {
+export default function ReferralBox({ account }) {
   const { showToast } = useToast();
-  const stats = getReferralStats();
+  const [stats, setStats] = useState({ qualified: 0, earned: 0 });
 
-  const copyLink = () => {
-    showToast(
-      'The referral link activates after the contract goes live — nothing was copied.',
-    );
+  useEffect(() => {
+    let alive = true;
+    if (!account) {
+      setStats({ qualified: 0, earned: 0 });
+      return;
+    }
+    getReferralStats(account).then((s) => {
+      if (alive) setStats(s);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [account]);
+
+  const link = account
+    ? `https://agent-miner-vein.vercel.app/r/${account}`
+    : "vein.app/r/andymulya";
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      showToast("Referral link copied.");
+    } catch {
+      showToast("Copy failed — select the link and copy it manually.");
+    }
   };
 
   return (
@@ -25,7 +47,7 @@ export default function ReferralBox() {
         <div className="flex min-w-[220px] flex-1 items-stretch border-[3px] border-black bg-[#0a0516] shadow-[inset_3px_3px_0_rgba(0,0,0,0.7),4px_4px_0_rgba(0,0,0,0.45)] max-[640px]:min-w-0">
           <input
             readOnly
-            value="vein.app/r/andymulya"
+            value={link}
             aria-label="Referral link"
             className="min-w-0 flex-1 border-none bg-transparent px-3 py-2 font-ui text-[1.05rem] text-mut outline-none"
           />
@@ -48,11 +70,12 @@ export default function ReferralBox() {
         </span>
       </div>
       <p className="mt-2 text-[0.9rem] text-mut">
-        This real-participation requirement closes the loophole for fake
-        accounts that only farm rewards.
+        This real-participation requirement closes the loophole for fake accounts
+        that only farm rewards.
       </p>
       <p className="mt-2 text-[0.9rem] text-mut">
         Rewards are paid from the Community allocation (50M VEIN).
+        {!account && " Connect your wallet to see your referrals."}
       </p>
 
       <div className="mt-4 grid grid-cols-2 gap-4 border-2 border-line">

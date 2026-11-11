@@ -8,10 +8,10 @@ import TokenomicsPage from "./pages/TokenomicsPage";
 import RulesPage from "./pages/RulesPage";
 
 /**
- * Agent Vein frontend — preview mode.
- * The contract is not deployed yet, so all data comes from
- * services/preview.js and every action button shows a preview toast.
- * Real contract integration plugs in later (see README.md).
+ * Agent Vein frontend — live on BSC mainnet (chain 56).
+ * Sale state, epoch, claims and referrals come from services/preview.js
+ * (real on-chain reads); action buttons send transactions through the
+ * user's own connected wallet.
  */
 export default function App() {
   return (

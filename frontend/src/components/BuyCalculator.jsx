@@ -1,7 +1,14 @@
 import { useState } from "react";
 import PixelButton from "./PixelButton";
 import { useToast } from "../contexts/ToastContext";
-import { VEIN_PER_BNB, MAX_BUY_BNB } from "../constants/vein";
+import { VEIN_PER_BNB, MAX_BUY_BNB, MIN_BUY_BNB } from "../constants/vein";
+import {
+  connectWallet,
+  getConnectedAccount,
+  isAgentHolder,
+  buyVein,
+  parseBnb,
+} from "../services/preview";
 import { fmt, fmtBnb } from "../utils/format";
 
 const QUICK_AMOUNTS = [
@@ -15,10 +22,44 @@ const QUICK_AMOUNTS = [
 /** BNB → VEIN sale calculator with quick-amount chips. */
 export default function BuyCalculator() {
   const [bnb, setBnb] = useState("0.01");
-  const { showPreviewToast } = useToast();
+  const [busy, setBusy] = useState(false);
+  const { showToast } = useToast();
 
   const amount = Math.max(0, parseFloat(bnb) || 0);
   const receive = fmt(amount * VEIN_PER_BNB);
+
+  const onBuy = async () => {
+    if (busy) return;
+    if (amount < MIN_BUY_BNB || amount > MAX_BUY_BNB) {
+      showToast(
+        `Amount must be between <b>${MIN_BUY_BNB} BNB</b> and <b>${MAX_BUY_BNB} BNB</b>.`,
+      );
+      return;
+    }
+    setBusy(true);
+    try {
+      let account = await getConnectedAccount();
+      if (!account) {
+        showToast("Connect your Agent Wallet first — check your wallet popup.");
+        account = await connectWallet();
+      }
+      const holder = await isAgentHolder(account);
+      if (!holder) {
+        showToast(
+          "This wallet holds <b>no Agent ID</b> — the sale is Agent ID holders only.",
+        );
+        return;
+      }
+      const hash = await buyVein(parseBnb(bnb));
+      showToast(
+        `<span style="color:#7dffa8">BUY SENT</span> — tx ${hash.slice(0, 10)}…${hash.slice(-6)}. Confirm it in your wallet, then check BscScan.`,
+      );
+    } catch (e) {
+      showToast(`Buy failed: ${String(e?.message || e).slice(0, 120)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div>
@@ -95,8 +136,8 @@ export default function BuyCalculator() {
         </span>
       </div>
 
-      <PixelButton className="mt-5 w-full" onClick={showPreviewToast}>
-        ▣ BUY VEIN
+      <PixelButton className="mt-5 w-full" onClick={onBuy}>
+        {busy ? "…WAITING FOR WALLET" : "▣ BUY VEIN"}
       </PixelButton>
       <p className="mt-3 text-[0.86rem] text-dim">
         Sale proceeds do not go to the team — all of it is paired into

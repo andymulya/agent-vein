@@ -85,3 +85,34 @@ Notes:
 - Fees: Pool A refund 5%, claim 5%, transfer tax 2% (fixed), snipe tax 99% opening block only.
 - Team: 20M VEIN direct + 80M vested linear 6 months. Referral: 1,000 VEIN flat, 2x-stake rule.
 - Router / factory / WBNB / Agent ID registry: hardcoded BSC mainnet addresses (see VERIFICATION.md).
+
+## LIVE DEPLOYMENT — BSC mainnet, 2026-11-11 (manual, Remix + WalletConnect)
+
+Deployer/opsWallet (NEW wallet, never the agentic or second wallet):
+`0x72ebd7a99e416e737559206a7ee96c549b1c9210`
+
+| Step | Contract | Address | Tx | Block |
+|---|---|---|---|---|
+| 1 | VeinCore (implementation) | `0xb7bd9d17e6800744a263ef8fac4cf21b3519f4e2` | `0x1e686826aec10e375dc37f90f4403922b69c44145aa2947e2e6a687578066c14` | 132892743 |
+| 2 | ProxyAdmin (standalone, unused) | `0xc7aa4405741da617422961fba69c3bc3589dc3ad` | `0x3e10ad9218c792b6d82c50eca3254beed81a6c2507ffc8da7da2bcef601f8b9e` | 132895115 |
+| 3 | TransparentUpgradeableProxy (redo) | `0x869d0edf28cc79b16c1b6f8fb3b399edcbe539f6` | `0x1a128d28020f5e27f75ee00389c3cbca2690f1d4c929f785b2da1026442111df` | 132897127 |
+| 4 | VeinToken ($VEIN) | `0x17ccdcd9763e824a59c78f60c10e6976d5663479` | `0x5f43fe0d644a53b01865256c8b85ceb7f11d88004947af7ed1f5e9df302bed07` | 132898487 |
+| 5 | initialize() on the live proxy | — | `0x2715a2b243c14df44556f2fc31c81cb417c08870233e28b0dcad83f5670399b5` | 132901298 |
+
+Live proxy admin (auto-deployed ProxyAdmin, owner = deployer wallet):
+`0xe73a2630b544bd8c757364c1d71c00a2aae0273c`
+
+Final on-chain checks (all pass): `token()` == VeinToken, `saleOpen()` == true,
+`owner()` == deployer wallet, `opsWallet()` == deployer wallet,
+`totalSupply()` == 1e27, proxy holds 980,000,000 VEIN, wallet holds 20,000,000 VEIN,
+`tradingOpen()` == false.
+
+Abandoned, never use: old proxy `0x927bedf8005a65a55c1ff56de7a25847df11698f`
+(initialized by mistake, tx `0x461f8e225910252760f2d951edee02d07db2a527150cd522d758c7292e86ac12`,
+holds 0 VEIN, upgrade path bricked), old admin
+`0xba425431a38cfe37229cbd74091e06a551e21417`, standalone ProxyAdmin above.
+
+Notes: Remix auto gas estimation fails via WalletConnect — use a manual gas limit
+per step. Remix compiles latest OpenZeppelin (5.1+): TransparentUpgradeableProxy's
+constructor is `(implementation, initialOwner, _data)` and deploys its own
+ProxyAdmin — the 2nd argument is an OWNER (EOA), never a ProxyAdmin contract.

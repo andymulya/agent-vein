@@ -3,8 +3,8 @@ import { createContext, useCallback, useContext, useRef, useState } from "react"
 const ToastContext = createContext(null);
 
 /**
- * Preview toast — every action button shows "contract not deployed yet"
- * until the contracts are live. No wallet connection happens in preview.
+ * Toast context. showPreviewToast is the "connect your wallet first"
+ * fallback used by buttons when no wallet is connected yet.
  */
 export function ToastProvider({ children }) {
   const [toast, setToast] = useState(null);
@@ -18,7 +18,7 @@ export function ToastProvider({ children }) {
 
   const showPreviewToast = useCallback(() => {
     showToast(
-      '<span style="color:#ffc44d">PREVIEW</span> — contract not yet deployed. This button activates after launch.',
+      '<span style="color:#ffc44d">WALLET</span> — connect your Agent Wallet first (BSC mainnet).',
     );
   }, [showToast]);
 

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import Panel from "../components/Panel";
 import SectionHead from "../components/SectionHead";
 import Chip from "../components/Chip";
@@ -5,13 +6,85 @@ import SegmentedBar from "../components/SegmentedBar";
 import ReferralBox from "../components/ReferralBox";
 import PixelButton from "../components/PixelButton";
 import { useToast } from "../contexts/ToastContext";
-import { getClaimable } from "../services/preview";
-import { fmt } from "../utils/format";
+import {
+  getClaimable,
+  getConnectedAccount,
+  connectWallet,
+  claimAll,
+} from "../services/preview";
+import { fmt, fmtBnb } from "../utils/format";
 
 /** Claim + referral section. */
 export default function ClaimPage() {
-  const claimable = getClaimable();
-  const { showPreviewToast } = useToast();
+  const [claimable, setClaimable] = useState({
+    vein: 0,
+    bnbReturned: 0,
+    unlockedPct: 0,
+    claims: [],
+  });
+  const [account, setAccount] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    let alive = true;
+    getConnectedAccount().then((a) => {
+      if (alive) setAccount(a);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    if (!account) {
+      setClaimable({ vein: 0, bnbReturned: 0, unlockedPct: 0, claims: [] });
+      return;
+    }
+    getClaimable(account).then((c) => {
+      if (alive) setClaimable(c);
+    });
+    const t = setInterval(() => {
+      getClaimable(account).then((c) => {
+        if (alive) setClaimable(c);
+      });
+    }, 30000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [account]);
+
+  const onClaimAll = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      let acc = account;
+      if (!acc) {
+        showToast("Connect your Agent Wallet first — check your wallet popup.");
+        acc = await connectWallet();
+        setAccount(acc);
+      }
+      const fresh = await getClaimable(acc);
+      if (!fresh.claims.length) {
+        showToast("Nothing claimable yet — Pool A needs 24h after deposit, Pool B vests over 14 days.");
+        return;
+      }
+      const txs = await claimAll(acc);
+      showToast(
+        `<span style="color:#7dffa8">CLAIM SENT</span> — ${txs.length} transaction(s). Confirm each in your wallet.`,
+      );
+      const updated = await getClaimable(acc);
+      setClaimable(updated);
+    } catch (e) {
+      showToast(`Claim failed: ${String(e?.message || e).slice(0, 120)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const filled = Math.min(40, Math.round((claimable.unlockedPct / 100) * 40));
 
   return (
     <section className="scroll-mt-24 px-4 py-12 pb-2 max-[640px]:px-3 max-[640px]:pt-9" id="klaim">
@@ -28,11 +101,14 @@ export default function ClaimPage() {
               <span className="text-[1.8rem]">$VEIN</span>
             </div>
             <p className="mt-1 text-[0.9rem] text-mut">
-              + {claimable.bnbReturned} BNB returned
+              + {fmtBnb(claimable.bnbReturned)} BNB returned
             </p>
             <p className="mt-3 text-[0.9rem] text-mut">
-              Nothing to claim yet — the pools are still locked and the
-              contract is not live.
+              {account
+                ? claimable.claims.length
+                  ? `${claimable.claims.length} position(s) ready to claim. Pool A pays reward + 95% principal after 24 hours; Pool B rewards vest over 14 days.`
+                  : "Nothing to claim yet — the pools open after the sale sells out."
+                : "Connect your Agent Wallet to see what you can claim."}
             </p>
 
             <div className="mt-5">
@@ -44,7 +120,7 @@ export default function ClaimPage() {
                   {claimable.unlockedPct}% UNLOCKED
                 </span>
               </div>
-              <SegmentedBar total={40} filled={0} tones={["f2", "f3", "f4"]} />
+              <SegmentedBar total={40} filled={filled} tones={["f2", "f3", "f4"]} />
               <p className="mt-3 text-[0.88rem] text-mut">
                 Pool B rewards vest second by second over 14 days. Pool A
                 rewards can be claimed together with the principal return
@@ -52,8 +128,8 @@ export default function ClaimPage() {
               </p>
             </div>
 
-            <PixelButton className="mt-5 w-full" onClick={showPreviewToast}>
-              ✚ CLAIM ALL
+            <PixelButton className="mt-5 w-full" onClick={onClaimAll}>
+              {busy ? "…WAITING FOR WALLET" : "✚ CLAIM ALL"}
             </PixelButton>
           </Panel>
 
@@ -61,7 +137,7 @@ export default function ClaimPage() {
             title="REFERRAL"
             head={<Chip tone="mint">+1,000 VEIN / REFERRAL</Chip>}
           >
-            <ReferralBox />
+            <ReferralBox account={account} />
           </Panel>
         </div>
       </div>
