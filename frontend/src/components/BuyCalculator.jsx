@@ -183,9 +183,6 @@ export default function BuyCalculator() {
           <div className="font-num text-[1.35rem] text-white">
             {costBnb.toFixed(6)} BNB
           </div>
-          <div className="mt-0.5 font-ui text-[0.72rem] text-dim">
-            1 BNB ≈ $680
-          </div>
           {freeApplied && (
             <div className="mt-1 font-ui text-[0.75rem] font-bold text-mint">
               1 SHARE FREE — YOU PAY FOR {paidShares} OF {n}
@@ -205,7 +202,7 @@ export default function BuyCalculator() {
       <div className="mt-3 flex items-start gap-2.5 text-[0.9rem] text-mut">
         <span className="mt-1 h-4 w-4 flex-none bg-gold" />
         <span>
-          1 share = {fmt(VEIN_PER_SHARE)} VEIN (≈ 0.000727 BNB) · Minimum 1 share ·
+          1 share = {fmt(VEIN_PER_SHARE)} VEIN · Minimum 1 share ·
           maximum {MAX_MINT_SHARES} shares per wallet, lifetime
           {mintState.live && mintState.mintedShares > 0
             ? ` — you have minted ${mintState.mintedShares}, ${mintState.remainingMint} left`

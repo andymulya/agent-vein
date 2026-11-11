@@ -33,7 +33,7 @@ export default function RulesPage() {
             <p>
               Fixed price of <b>$0.0001 per VEIN</b>. Reference rate: 0.001 BNB
               ≈ <b>6,874 VEIN</b> (follows the BNB price at the time of
-              purchase). 1 BNB ≈ $680.
+              purchase).
             </p>
             <ul>
               <li>
@@ -46,7 +46,7 @@ export default function RulesPage() {
               </li>
               <li>
                 Only wallets holding an <b>Agent ID</b> can mint. Minimum 1
-                share (≈ 0.000727 BNB), maximum 10 shares per wallet, lifetime.
+                share, maximum 10 shares per wallet, lifetime.
               </li>
               <li>
                 All sale proceeds go into <b>permanent LP</b>, not to the
