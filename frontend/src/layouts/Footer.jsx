@@ -1,11 +1,4 @@
-import {
-  VEIN_CORE,
-  VEIN_TOKEN,
-  VEIN_CORE_IMPL,
-  PROXY_ADMIN,
-  OPS_WALLET,
-  BSCSCAN_ADDRESS,
-} from "../constants/vein";
+import { VEIN_TOKEN, BSCSCAN_ADDRESS } from "../constants/vein";
 
 const SHORT = (a) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
@@ -27,28 +20,9 @@ export default function Footer() {
             any other page claiming otherwise.
           </p>
           <p className="mt-3 max-w-[560px] font-ui text-[0.78rem] leading-loose text-dim">
-            CORE ·{" "}
-            <a className="text-mut underline" href={`${BSCSCAN_ADDRESS}${VEIN_CORE}`} target="_blank" rel="noreferrer">
-              {SHORT(VEIN_CORE)}
-            </a>
-            <br />
             TOKEN ·{" "}
             <a className="text-mut underline" href={`${BSCSCAN_ADDRESS}${VEIN_TOKEN}`} target="_blank" rel="noreferrer">
               {SHORT(VEIN_TOKEN)}
-            </a>
-            <br />
-            IMPL ·{" "}
-            <a className="text-mut underline" href={`${BSCSCAN_ADDRESS}${VEIN_CORE_IMPL}`} target="_blank" rel="noreferrer">
-              {SHORT(VEIN_CORE_IMPL)}
-            </a>
-            {" · "}ADMIN ·{" "}
-            <a className="text-mut underline" href={`${BSCSCAN_ADDRESS}${PROXY_ADMIN}`} target="_blank" rel="noreferrer">
-              {SHORT(PROXY_ADMIN)}
-            </a>
-            <br />
-            OPS ·{" "}
-            <a className="text-mut underline" href={`${BSCSCAN_ADDRESS}${OPS_WALLET}`} target="_blank" rel="noreferrer">
-              {SHORT(OPS_WALLET)}
             </a>
           </p>
         </div>
