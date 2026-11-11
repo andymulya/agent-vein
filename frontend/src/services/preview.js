@@ -26,6 +26,7 @@ export {
   buyVein,
   depositPool,
   claimAll,
+  addVeinToWallet,
   shortAddress,
   parseBnb,
 } from "./chain";

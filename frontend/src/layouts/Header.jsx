@@ -49,7 +49,12 @@ export default function Header() {
           className="flex items-center gap-2.5 py-1.5 font-disp text-[1.05rem] text-gold no-underline max-[640px]:text-[0.88rem] max-[380px]:text-[0.78rem]"
           style={{ textShadow: "2px 2px 0 #a30f2c, 4px 4px 0 #000" }}
         >
-          <span className="logo-drop" aria-hidden="true" />
+          <img
+            src="/logo.png"
+            alt=""
+            className="h-8 w-8 rounded-full object-cover"
+            aria-hidden="true"
+          />
           VEIN
         </a>
 

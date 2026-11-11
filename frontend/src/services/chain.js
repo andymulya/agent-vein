@@ -196,6 +196,22 @@ export async function connectWallet() {
   return account;
 }
 
+export async function addVeinToWallet() {
+  const eth = ethereum();
+  return eth.request({
+    method: "wallet_watchAsset",
+    params: {
+      type: "ERC20",
+      options: {
+        address: VEIN_TOKEN,
+        symbol: "VEIN",
+        decimals: 18,
+        image: "https://agent-miner-vein.vercel.app/logo.png",
+      },
+    },
+  });
+}
+
 async function sendTx({ to, data, value = "0x0" }) {
   const eth = ethereum();
   const from = (await eth.request({ method: "eth_accounts" }))[0];

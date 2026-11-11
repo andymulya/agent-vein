@@ -7,6 +7,7 @@ import {
   getConnectedAccount,
   isAgentHolder,
   buyVein,
+  addVeinToWallet,
 } from "../services/preview";
 import { fmt } from "../utils/format";
 
@@ -66,6 +67,19 @@ export default function BuyCalculator() {
       showToast(`Mint failed: ${String(e?.message || e).slice(0, 120)}`);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const onAddToWallet = async () => {
+    try {
+      const added = await addVeinToWallet();
+      showToast(
+        added
+          ? `<span style="color:#7dffa8">$VEIN added to your wallet</span> — with its logo.`
+          : "$VEIN was not added — request dismissed in your wallet.",
+      );
+    } catch (e) {
+      showToast(`Could not add $VEIN: ${String(e?.message || e).slice(0, 100)}`);
     }
   };
 
@@ -148,6 +162,14 @@ export default function BuyCalculator() {
       <PixelButton className="mt-5 w-full" onClick={onMint}>
         {busy ? "…WAITING FOR WALLET" : "▣ MINT VEIN"}
       </PixelButton>
+      <button
+        type="button"
+        onClick={onAddToWallet}
+        className="mt-3 flex w-full items-center justify-center gap-2 border-2 border-line bg-panel2 px-3 py-2.5 font-ui text-[0.78rem] font-bold text-mut hover:border-line2 hover:text-white"
+      >
+        <img src="/coin.png" alt="" className="h-5 w-5 rounded-full object-cover" aria-hidden="true" />
+        ＋ ADD $VEIN TO WALLET
+      </button>
       <p className="mt-3 text-[0.86rem] text-dim">
         Sale proceeds do not go to the team — all of it is paired into
         permanent LP.
