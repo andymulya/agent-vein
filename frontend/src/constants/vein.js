@@ -46,6 +46,8 @@ export const VEIN_PER_BNB = 6_874 / 0.001;
 
 export const SHARE_BNB = 0.001; // pool share price (Pool A/B deposits)
 export const VEIN_PER_SHARE = 5000; // 1 mint share = 5,000 VEIN ≈ $0.50
+/** Reference USD price of 1 BNB, for the TOTAL COST $ estimate only (live ~$679.70, 2026-11-11). Never shown on the VEIN share price. */
+export const BNB_USD_REF = 680;
 export const TOTAL_MINT_SHARES = SALE_ALLOCATION / VEIN_PER_SHARE; // 40,000
 export const MAX_MINT_SHARES = 10; // per wallet
 export const MAX_SHARES_PER_AGENT_ID = 10;

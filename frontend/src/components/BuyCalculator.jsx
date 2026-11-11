@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import PixelButton from "./PixelButton";
 import { useToast } from "../contexts/ToastContext";
-import { VEIN_PER_SHARE, MAX_MINT_SHARES } from "../constants/vein";
+import { VEIN_PER_SHARE, MAX_MINT_SHARES, BNB_USD_REF } from "../constants/vein";
 import {
   connectWallet,
   getConnectedAccount,
@@ -63,6 +63,8 @@ export default function BuyCalculator() {
     (BigInt(paidShares) * BigInt(VEIN_PER_SHARE) * 10n ** 18n + VEIN_PER_BNB - 1n) /
     VEIN_PER_BNB;
   const costBnb = Number(costWei) / 1e18;
+  // $ estimate of the TOTAL COST only (what the user pays), never on the share price.
+  const costUsd = costBnb * BNB_USD_REF;
   const receive = fmt(n * VEIN_PER_SHARE);
 
   const onMint = async () => {
@@ -182,6 +184,9 @@ export default function BuyCalculator() {
           </div>
           <div className="font-num text-[1.35rem] text-white">
             {costBnb.toFixed(6)} BNB
+          </div>
+          <div className="mt-0.5 font-ui text-[0.72rem] text-dim">
+            ≈ ${costUsd.toFixed(2)}
           </div>
           {freeApplied && (
             <div className="mt-1 font-ui text-[0.75rem] font-bold text-mint">
