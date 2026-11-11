@@ -38,6 +38,8 @@ export const TOTAL_SUPPLY = 1_000_000_000;
 export const SALE_ALLOCATION = 200_000_000;
 export const SALE_MAX_TARGET_USD = 20_000;
 export const LIQUIDITY_ALLOCATION = 150_000_000;
+export const FREE_SHARES = 1000; // first 1,000 free mints (v2 contract)
+export const FREE_MINT_AMOUNT = 5000; // VEIN per free mint
 
 /** VEIN per 1 BNB at the design reference rate (0.001 BNB ≈ 6,874 VEIN). */
 export const VEIN_PER_BNB = 6_874 / 0.001;

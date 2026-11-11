@@ -7,10 +7,11 @@
  * RPC is unreachable or no wallet is connected. Writes go through the
  * user's own wallet and always need their in-wallet confirmation.
  */
-import { SALE_ALLOCATION } from "../constants/vein";
+import { SALE_ALLOCATION, FREE_SHARES } from "../constants/vein";
 import {
   getSaleState,
   getPoolStats as chainPoolStats,
+  getFreePhase as chainFreePhase,
   getEpochInfo,
   getClaimable as chainClaimable,
   getReferralStats as chainReferralStats,
@@ -56,6 +57,29 @@ export async function getSaleStatus() {
       status: "OFFLINE",
       poolsOpen: false,
       proceedsBnb: 0,
+    };
+  }
+}
+
+/** Free-phase progress. On the v1 contract the read reverts → COMING SOON. */
+export async function getFreePhase() {
+  try {
+    const f = await chainFreePhase();
+    const claimed = f.claimed;
+    return {
+      claimed,
+      total: FREE_SHARES,
+      pct: (claimed / FREE_SHARES) * 100,
+      status: claimed >= FREE_SHARES ? "ENDED" : "LIVE",
+      live: true,
+    };
+  } catch {
+    return {
+      claimed: 0,
+      total: FREE_SHARES,
+      pct: 0,
+      status: "COMING SOON",
+      live: false,
     };
   }
 }

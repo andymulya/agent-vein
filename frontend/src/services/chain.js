@@ -37,6 +37,7 @@ const SEL = {
   depositPoolB: "0xb71ab3ef",
   claimPoolA: "0xeb8c82fa",
   claimPoolBReward: "0xf868c816",
+  freeClaimed: "0x1b47ec3a", // v2: free-mint shares claimed (reverts on v1)
 };
 
 const TOPIC = {
@@ -232,6 +233,12 @@ export async function getPoolStats() {
     miningPaidWei: decUint(paid),
     poolsOpen: decBool(pools),
   };
+}
+
+/** Free-phase counter (v2). Throws on the v1 contract — caller falls back. */
+export async function getFreePhase() {
+  const claimed = await ethCall(VEIN_CORE, SEL.freeClaimed);
+  return { claimed: Number(decUint(claimed)) };
 }
 
 export async function getEpochInfo() {
