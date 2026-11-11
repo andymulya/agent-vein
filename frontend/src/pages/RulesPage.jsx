@@ -8,7 +8,7 @@ export default function RulesPage() {
   return (
     <section className="scroll-mt-24 px-4 py-12 pb-2 max-[640px]:px-3 max-[640px]:pt-9" id="aturan">
       <div className="mx-auto max-w-[1180px]">
-        <SectionHead title="▦ HOW IT WORKS & RULES" tag="FOUR PULSES FROM BUYING TO HARVEST" />
+        <SectionHead title="▦ HOW IT WORKS & RULES" tag="FOUR PULSES FROM MINTING TO HARVEST" />
 
         <div className="grid grid-cols-4 gap-6 max-[900px]:grid-cols-2 max-[520px]:grid-cols-1 max-[480px]:gap-4">
           {HOW_IT_WORKS.map((step) => (
@@ -44,7 +44,7 @@ export default function RulesPage() {
                 gone.
               </li>
               <li>
-                Only wallets holding an <b>Agent ID</b> can buy. Minimum ±$1
+                Only wallets holding an <b>Agent ID</b> can mint. Minimum ±$1
                 (±0.0015 BNB), maximum 5 BNB per wallet.
               </li>
               <li>

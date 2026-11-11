@@ -53,7 +53,7 @@ export default function Hero() {
 
         <div className="mt-7 flex flex-wrap justify-center gap-4 max-[480px]:flex-col max-[480px]:items-stretch">
           <a href="#beli" className="btn">
-            ▣ Buy $VEIN
+            ▣ Mint $VEIN
           </a>
           <a href="#pool" className="btn ghost">
             View Pools →

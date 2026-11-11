@@ -46,13 +46,13 @@ export default function BuyPage() {
     <section className="scroll-mt-24 px-4 py-12 pb-2 max-[640px]:px-3 max-[640px]:pt-9" id="beli">
       <div className="mx-auto max-w-[1180px]">
         <SectionHead
-          title="▣ BUY $VEIN"
+          title="▣ MINT $VEIN"
           tag="FIXED PRICE $0.0001 — NO TIME LIMIT, UNTIL THE ALLOCATION RUNS OUT"
         />
 
         <div className="grid grid-cols-2 gap-6 max-[900px]:grid-cols-1 max-[480px]:gap-4">
           <Panel
-            title="BUY NOW"
+            title="MINT NOW"
             head={<Chip tone="gold">AGENT ID ONLY</Chip>}
           >
             <BuyCalculator />
@@ -68,6 +68,9 @@ export default function BuyPage() {
                 {" "}
                 / {fmt(SALE_ALLOCATION)} VEIN
               </span>
+            </div>
+            <div className="mt-2 font-num text-[1.35rem] leading-none text-gold max-[640px]:text-[1.15rem]">
+              {fmt(sale.allocation - sale.sold)} VEIN REMAINING
             </div>
             <div className="mt-3">
               <SegmentedBar total={40} filled={filled} tones={["f1", "f2", "f3", "f4"]} />

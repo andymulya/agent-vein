@@ -49,7 +49,7 @@ export const MIN_BUY_BNB = 0.0015; // ≈ $1
 export const MAX_BUY_BNB = 5;
 
 export const NAV_ITEMS = [
-  { id: "beli", label: "Buy", icon: "▣" },
+  { id: "beli", label: "Mint", icon: "▣" },
   { id: "pool", label: "Pool", icon: "⛏" },
   { id: "klaim", label: "Claim", icon: "✚" },
   { id: "tokenomik", label: "Tokenomics", icon: "▤" },
@@ -141,8 +141,8 @@ export const FEE_CARDS = [  {
 export const HOW_IT_WORKS = [
   {
     n: "01",
-    title: "BUY $VEIN",
-    text: "Agent ID holders buy VEIN at the fixed price of $0.0001 — minimum ±$1, maximum 5 BNB per wallet, no time limit.",
+    title: "MINT $VEIN",
+    text: "Agent ID holders mint VEIN at the fixed price of $0.0001 — minimum ±$1, maximum 5 BNB per wallet, no time limit.",
   },
   {
     n: "02",

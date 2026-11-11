@@ -62,7 +62,7 @@ export default function AgentCommand() {
       </div>
       <p className="mt-2 text-[0.9rem] text-mut">
         Paste this into your AI agent (e.g. Binance AI Pro) and it will know
-        how to buy, stake, mine and claim for you — Agent ID wallet only.
+        how to mint, stake, mine and claim for you — Agent ID wallet only.
       </p>
       <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words border-2 border-line bg-[#0a0516] p-3 font-ui text-[0.82rem] leading-relaxed text-mut">
         {AGENT_COMMAND}

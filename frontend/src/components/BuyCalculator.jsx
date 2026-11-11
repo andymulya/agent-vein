@@ -52,10 +52,10 @@ export default function BuyCalculator() {
       }
       const hash = await buyVein(parseBnb(bnb));
       showToast(
-        `<span style="color:#7dffa8">BUY SENT</span> — tx ${hash.slice(0, 10)}…${hash.slice(-6)}. Confirm it in your wallet, then check BscScan.`,
+        `<span style="color:#7dffa8">MINT SENT</span> — tx ${hash.slice(0, 10)}…${hash.slice(-6)}. Confirm it in your wallet, then check BscScan.`,
       );
     } catch (e) {
-      showToast(`Buy failed: ${String(e?.message || e).slice(0, 120)}`);
+      showToast(`Mint failed: ${String(e?.message || e).slice(0, 120)}`);
     } finally {
       setBusy(false);
     }
@@ -117,7 +117,7 @@ export default function BuyCalculator() {
       <div className="mt-3 flex items-start gap-2.5 text-[0.9rem] text-mut">
         <span className="mt-1 h-4 w-4 flex-none bg-mint [clip-path:polygon(14%_44%,0_65%,40%_100%,100%_16%,84%_2%,38%_72%)]" />
         <span>
-          Purchase requirement: the connected wallet must hold an{" "}
+          Mint requirement: the connected wallet must hold an{" "}
           <b className="text-ink">Agent ID</b> — the sale is open to Agent ID
           holders only.
         </span>
@@ -137,7 +137,7 @@ export default function BuyCalculator() {
       </div>
 
       <PixelButton className="mt-5 w-full" onClick={onBuy}>
-        {busy ? "…WAITING FOR WALLET" : "▣ BUY VEIN"}
+        {busy ? "…WAITING FOR WALLET" : "▣ MINT VEIN"}
       </PixelButton>
       <p className="mt-3 text-[0.86rem] text-dim">
         Sale proceeds do not go to the team — all of it is paired into
