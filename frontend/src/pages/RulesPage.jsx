@@ -33,7 +33,7 @@ export default function RulesPage() {
             <p>
               Fixed price of <b>$0.0001 per VEIN</b>. Reference rate: 0.001 BNB
               ≈ <b>6,874 VEIN</b> (follows the BNB price at the time of
-              purchase).
+              purchase). 1 BNB ≈ $680.
             </p>
             <ul>
               <li>

@@ -183,6 +183,9 @@ export default function BuyCalculator() {
           <div className="font-num text-[1.35rem] text-white">
             {costBnb.toFixed(6)} BNB
           </div>
+          <div className="mt-0.5 font-ui text-[0.72rem] text-dim">
+            1 BNB ≈ $680
+          </div>
           {freeApplied && (
             <div className="mt-1 font-ui text-[0.75rem] font-bold text-mint">
               1 SHARE FREE — YOU PAY FOR {paidShares} OF {n}
